@@ -2,16 +2,33 @@
 
 ## Parameter
 
-- `utxo_ref`: UTxO to be spent at minting
+## Datum
 
-- `datum`: UTxO to be spent at minting
+```rs
+type ContributerDatum {
+   github: String,
+   contributions: List<Contribution>
+}
+
+type Contribution {
+   signers: List<PubKeyHash>,
+   amount: Int
+}
+```
 
 ## User Action
 
-1. Mint - Redeemer `RMint`
+Redeemer of Format: `pub_key_hash`: user's public key hash
 
-   - Transaction hash as parameterized is included in input
+1. Mint - Redeemer `RMint`
+   - Check required signers for the `pub_key_hash` specified in redeemer
+   - Check if mint one reference token and one nft only
+   - Check policy id and asset prefix name
+   - Check that asset name == prefix + `pub_key_hash`
+   - Check specific datum output at reference token is of `ContributerDatum` format
 
 2. Burn - Redeemer `RBurn`
-
-   - The current policy id only has negative minting value in transaction body.
+   - Check required signers for the `pub_key_hash` specified in redeemer
+   - Check if mint one reference token and one nft only
+   - Check policy id and asset prefix name
+   - Check that asset name == prefix + `pub_key_hash`
