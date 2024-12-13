@@ -20,33 +20,17 @@ validator identity_token {
   mint(redeemer: MyRedeemer, policy_id: PolicyId, transaction: Transaction) {
     let Transaction { mint, extra_signatories, .. } = transaction
 
-    when
+    expect [Pair(asset_name, amount)] =
       mint
         |> assets.tokens(policy_id)
         |> dict.to_pairs()
-    is {
-      [Pair(asset_name, amount)] ->
-        when redeemer.action is {
-          CheckMint -> {
-            let signer_check =
-              extra_signatories |> list.has(redeemer.pub_key_hash)
-            signer_check? && (amount == 1)?
-          }
-          CheckBurn -> amount == -1
-        }
-      _ -> False
+    when redeemer.action is {
+      CheckMint -> {
+        let signer_check = extra_signatories |> list.has(redeemer.pub_key_hash)
+        signer_check? && (amount == 1)? && (asset_name == redeemer.pub_key_hash)?
+      }
+      CheckBurn -> amount == -1
     }
-    // expect [Pair(asset_name, amount)] =
-    //   mint
-    //     |> assets.tokens(policy_id)
-    //     |> dict.to_pairs()
-    // when redeemer.action is {
-    //   CheckMint -> {
-    //     expect extra_signatories |> list.has(redeemer.pub_key_hash)
-    //     amount == 1
-    //   }
-    //   CheckBurn -> amount == -1
-    // }
   }
 
   else(_) {
