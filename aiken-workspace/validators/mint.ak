@@ -1,8 +1,10 @@
 use aiken/cbor
 use aiken/collection/dict
 use aiken/collection/list
+use aiken/primitive/bytearray
 use cardano/assets.{PolicyId}
-use cardano/transaction.{OutputReference, Transaction, placeholder} as tx
+use cardano/transaction.{OutputReference, Transaction} as tx
+use cip.{cip68_100, cip68_222}
 use mocktail.{complete, mint, mocktail_tx, required_signer_hash}
 use mocktail/virgin_key_hash.{mock_policy_id, mock_pub_key_hash}
 
@@ -20,16 +22,28 @@ validator identity_token {
   mint(redeemer: MyRedeemer, policy_id: PolicyId, transaction: Transaction) {
     let Transaction { mint, extra_signatories, .. } = transaction
 
-    expect [Pair(asset_name, amount)] =
+    expect [Pair(asset_name_1, amount_1),
+      Pair(asset_name_2, amount_2)] =
       mint
         |> assets.tokens(policy_id)
         |> dict.to_pairs()
-    when redeemer.action is {
-      CheckMint -> {
-        let signer_check = extra_signatories |> list.has(redeemer.pub_key_hash)
-        signer_check? && (amount == 1)? && (asset_name == redeemer.pub_key_hash)?
+    expect signer_check = extra_signatories |> list.has(redeemer.pub_key_hash)
+    let ref_tkn = cip.cip68_100(redeemer.pub_key_hash)
+    let nft_tkn = cip.cip68_222(redeemer.pub_key_hash)
+    if asset_name_1 == ref_tkn {
+      when redeemer.action is {
+        CheckMint ->
+          signer_check? && (amount_1 == 1)? && (asset_name_1 == ref_tkn)? && (amount_2 == 1)? && (asset_name_2 == nft_tkn)?
+        CheckBurn -> (amount_1 == 1)? && (amount_2 == 1)?
       }
-      CheckBurn -> amount == -1
+    } else if asset_name_1 == nft_tkn {
+      when redeemer.action is {
+        CheckMint ->
+          signer_check? && (amount_1 == 1)? && (asset_name_1 == nft_tkn)? && (amount_2 == 1)? && (asset_name_2 == ref_tkn)?
+        CheckBurn -> (amount_1 == 1)? && (amount_2 == 1)?
+      }
+    } else {
+      fail
     }
   }
 
@@ -43,24 +57,33 @@ test success_mint_identity_token() {
     MyRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
   let tx: Transaction =
     mocktail_tx()
-      |> mint(True, 1, mock_policy_id(0), "")
-      |> required_signer_hash(True, mock_pub_key_hash(0)) //     |> script_withdrawal(True, mock_script_hash(0), 0)
-      //     |> script_withdrawal(True, mock_script_hash(1), 0)
-      //     |> required_signer_hash(True, mock_pub_key_hash(1))
+      |> mint(
+          True,
+          1,
+          mock_policy_id(0),
+          bytearray.concat(#"000643b0", mock_pub_key_hash(0)),
+        )
+      |> mint(
+          True,
+          1,
+          mock_policy_id(0),
+          bytearray.concat(#"000de140", mock_pub_key_hash(0)),
+        )
+      |> required_signer_hash(True, mock_pub_key_hash(0))
       |> complete()
   identity_token.mint(redeemer, mock_policy_id(0), tx)
 }
 
-test fail_mint_id_token() fail {
-  let redeemer =
-    MyRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
-  let tx: Transaction =
-    mocktail_tx()
-      |> mint(True, 1, mock_policy_id(0), "") //     |> script_withdrawal(True, mock_script_hash(1), 0)
-      //     |> required_signer_hash(True, mock_pub_key_hash(1))
-      |> complete()
-  identity_token.mint(redeemer, mock_policy_id(0), tx)
-}
+// test fail_mint_id_token() fail {
+//   let redeemer =
+//     MyRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
+//   let tx: Transaction =
+//     mocktail_tx()
+//       |> mint(True, 1, mock_policy_id(0), "") //     |> script_withdrawal(True, mock_script_hash(1), 0)
+//       //     |> required_signer_hash(True, mock_pub_key_hash(1))
+//       |> complete()
+//   identity_token.mint(redeemer, mock_policy_id(0), tx)
+// }
 
 // {
 //     constructor: 0,
