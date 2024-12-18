@@ -30,20 +30,17 @@ validator identity_token {
     expect signer_check = extra_signatories |> list.has(redeemer.pub_key_hash)
     let ref_tkn = cip.cip68_100(redeemer.pub_key_hash)
     let nft_tkn = cip.cip68_222(redeemer.pub_key_hash)
-    if asset_name_1 == ref_tkn {
-      when redeemer.action is {
-        CheckMint ->
-          signer_check? && (amount_1 == 1)? && (asset_name_1 == ref_tkn)? && (amount_2 == 1)? && (asset_name_2 == nft_tkn)?
-        CheckBurn -> (amount_1 == 1)? && (amount_2 == 1)?
-      }
-    } else if asset_name_1 == nft_tkn {
-      when redeemer.action is {
-        CheckMint ->
-          signer_check? && (amount_1 == 1)? && (asset_name_1 == nft_tkn)? && (amount_2 == 1)? && (asset_name_2 == ref_tkn)?
-        CheckBurn -> (amount_1 == 1)? && (amount_2 == 1)?
-      }
-    } else {
-      fail
+
+    when redeemer.action is {
+      CheckMint ->
+        if asset_name_1 == ref_tkn {
+          asset_name_2 == nft_tkn
+        } else if asset_name_1 == nft_tkn {
+          asset_name_2 == ref_tkn
+        } else {
+          False
+        }? && signer_check? && (amount_1 == 1)? && (amount_2 == 1)?
+      CheckBurn -> (amount_1 == -1)? && (amount_2 == -1)?
     }
   }
 
