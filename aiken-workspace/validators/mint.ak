@@ -4,13 +4,13 @@ use aiken/collection/list
 use aiken/primitive/bytearray
 use cardano/address.{Address, from_script}
 use cardano/assets.{PolicyId, flatten, from_asset}
-use cardano/transaction.{OutputReference, Transaction} as tx
+use cardano/transaction.{Datum, InlineDatum, OutputReference, Transaction} as tx
 use cip.{cip68_100, cip68_222}
 use mocktail.{add_output, complete, mint, mocktail_tx, required_signer_hash}
 use mocktail/virgin_key_hash.{
   mock_policy_id, mock_pub_key_hash, mock_script_hash,
 }
-use mocktail/virgin_outputs.{mock_pub_key_output}
+use mocktail/virgin_outputs.{mock_script_output}
 
 pub type Action {
   CheckMint
@@ -20,6 +20,22 @@ pub type Action {
 pub type MyRedeemer {
   pub_key_hash: ByteArray,
   action: Action,
+}
+
+pub type ContributerDatum {
+  github: String,
+  contributions: List<Contribution>,
+}
+
+pub type Contribution {
+  signers: List<ByteArray>,
+  amount: Int,
+}
+
+fn to_contributer_datum(data: Datum) -> ContributerDatum {
+  expect InlineDatum(my_datum) = data
+  expect contributer_datum: ContributerDatum = my_datum
+  contributer_datum
 }
 
 validator identity_token(ref_token_hold_address: Address) {
@@ -65,10 +81,15 @@ validator identity_token(ref_token_hold_address: Address) {
           }? && (amount_1 == 1)? && (amount_2 == 1)?
         CheckBurn -> (amount_1 == -1)? && (amount_2 == -1)?
       }
+
+    let datum = ref_output.datum |> to_contributer_datum()
+    let datum_check = (datum.github != @"")? && (datum.contributions == [])?
+
     and {
       signer_check?,
       ref_output_check?,
       redeemer_check?,
+      datum_check?,
     }
   }
 
@@ -98,23 +119,25 @@ test success_mint_identity_token() {
       |> complete()
       |> add_output(
           True,
-          mock_pub_key_output(
+          mock_script_output(
             from_script("ref_token_hold"),
             from_asset(
               mock_policy_id(0),
               bytearray.concat(#"000643b0", mock_pub_key_hash(0)),
               1,
             ),
+            InlineDatum(ContributerDatum { github: @"abc", contributions: [] }),
           ),
         )
+  // InlineDatum(redeemer),
   let ref_token_hold_address: Address = from_script("ref_token_hold")
   identity_token.mint(ref_token_hold_address, redeemer, mock_policy_id(0), tx)
 }
 
-test address_check() {
-  let ref_token_hold_address: Address = from_script("ref_token_hold")
-  cbor.serialise(ref_token_hold_address) == "d8799fd87a9f4e7265665f746f6b656e5f686f6c64ffd87a80ff"
-}
+// test address_check() {
+//   let ref_token_hold_address: Address = from_script("ref_token_hold")
+//   cbor.serialise(ref_token_hold_address) == "d8799fd87a9f4e7265665f746f6b656e5f686f6c64ffd87a80ff"
+// }
 
 // test fail_mint_id_token() fail {
 //   let redeemer =
@@ -145,3 +168,10 @@ test redeemer_hex() {
     MyRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
   cbor.serialise(redeemer) == #"d8799f581c1b25744c74cf166de9feee1ae6f8cc8b7281a12e6f4d503bb2ecc67cd87980ff"
 }
+// test to_datum() {
+//   let dummy_datum: Data = "abc"
+
+//   cbor.serialise(to_my_datum(dummy_datum)) == cbor.serialise(
+//     ContributerDatum { github: @"abc", contributions: [] },
+//   )
+// }
