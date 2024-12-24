@@ -1,7 +1,7 @@
 # Mint bounty token
 
 ## parameter
-Bounty board
+Oracle NFT
 
 ## User Action:
 1. Mint - Redeemer
@@ -10,7 +10,7 @@ Bounty board
 
     check is the user pkh match the id_token asset name (pkh)
     {
-        token.value -> get assetname
+        token.value -> get assetname from oracle
         remove cip222 -> get pkh 
         redeemer.pkh == this.pkh
     } - > MInt bounty token(assetname,policyid)
