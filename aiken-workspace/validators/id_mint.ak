@@ -3,19 +3,28 @@ use aiken/collection/dict
 use aiken/collection/list
 use aiken/primitive/bytearray
 use cardano/address.{Address, from_script}
-use cardano/assets.{PolicyId, flatten, from_asset}
-use cardano/transaction.{InlineDatum, OutputReference, Transaction} as tx
+use cardano/assets.{AssetName, PolicyId, flatten, from_asset}
+use cardano/transaction.{InlineDatum, Transaction} as tx
 use cip.{cip68_100, cip68_222}
 use identity_token_type.{
-  CheckBurn, CheckMint, ContributerDatum, MyRedeemer, to_contributer_datum,
+  CheckBurn, CheckMint, ContributerDatum, IdRedeemer, to_contributer_datum,
 }
-use mocktail.{add_output, complete, mint, mocktail_tx, required_signer_hash}
+use mocktail.{
+  add_output, complete, mint, mock_tx_hash, mocktail_tx, ref_tx_in,
+  ref_tx_in_inline_datum, required_signer_hash,
+}
 use mocktail/virgin_key_hash.{mock_policy_id, mock_pub_key_hash}
 use mocktail/virgin_outputs.{mock_script_output}
+use oracle_token_type.{OracleDatum}
+use oracle_token_util.{get_oracle_nft_datum}
 
-validator identity_token(ref_token_hold_address: Address) {
-  mint(redeemer: MyRedeemer, policy_id: PolicyId, transaction: Transaction) {
-    let Transaction { mint, extra_signatories, outputs, .. } = transaction
+validator identity_token(oracle_nft: (PolicyId, AssetName)) {
+  mint(redeemer: IdRedeemer, policy_id: PolicyId, transaction: Transaction) {
+    let Transaction { mint, extra_signatories, outputs, reference_inputs, .. } =
+      transaction
+
+    expect oracle_input_datum: OracleDatum =
+      reference_inputs |> get_oracle_nft_datum(oracle_nft)
 
     expect [Pair(asset_name_1, amount_1),
       Pair(asset_name_2, amount_2)] =
@@ -28,7 +37,11 @@ validator identity_token(ref_token_hold_address: Address) {
 
     expect Some(ref_output) =
       outputs
-        |> list.find(fn(output) { output.address == ref_token_hold_address })
+        |> list.find(
+            fn(output) {
+              output.address == oracle_input_datum.id_token_store_address
+            },
+          )
 
     let ref_output_check =
       when
@@ -74,30 +87,47 @@ validator identity_token(ref_token_hold_address: Address) {
 }
 
 test success_mint_identity_token() {
-  let redeemer =
-    MyRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
+  let id_redeemer =
+    IdRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
+
   let tx: Transaction =
     mocktail_tx()
       |> mint(
           True,
           1,
-          mock_policy_id(0),
+          mock_policy_id(1),
           bytearray.concat(#"000643b0", mock_pub_key_hash(0)),
         )
       |> mint(
           True,
           1,
-          mock_policy_id(0),
+          mock_policy_id(1),
           bytearray.concat(#"000de140", mock_pub_key_hash(0)),
         )
       |> required_signer_hash(True, mock_pub_key_hash(0))
+      |> ref_tx_in(
+          True,
+          mock_tx_hash(0),
+          0,
+          from_asset(mock_policy_id(2), "oracle", 1),
+          from_script("ref_token_hold"),
+        )
+      |> ref_tx_in_inline_datum(
+          True,
+          OracleDatum {
+            bounty_token_policy_id: mock_policy_id(0),
+            bounty_board_address: from_script("bounty_board_hold"),
+            id_token_policy_id: mock_policy_id(1),
+            id_token_store_address: from_script("ref_token_hold"),
+          },
+        )
       |> complete()
       |> add_output(
           True,
           mock_script_output(
             from_script("ref_token_hold"),
             from_asset(
-              mock_policy_id(0),
+              mock_policy_id(1),
               bytearray.concat(#"000643b0", mock_pub_key_hash(0)),
               1,
             ),
@@ -105,15 +135,18 @@ test success_mint_identity_token() {
           ),
         )
   // InlineDatum(redeemer),
-  let ref_token_hold_address: Address = from_script("ref_token_hold")
-  identity_token.mint(ref_token_hold_address, redeemer, mock_policy_id(0), tx)
+  identity_token.mint(
+    (mock_policy_id(2), "oracle"),
+    id_redeemer,
+    mock_policy_id(1),
+    tx,
+  )
 }
 
-// test address_check() {
-//   let ref_token_hold_address: Address = from_script("ref_token_hold")
-//   cbor.serialise(ref_token_hold_address) == "d8799fd87a9f4e7265665f746f6b656e5f686f6c64ffd87a80ff"
-// }
-
+test address_check() {
+  let ref_token_hold_address: Address = from_script("ref_token_hold")
+  cbor.serialise(ref_token_hold_address) != "d8799fd87a9f4e7265665f746f6b656e5f686f6c64ffd87a80ff"
+}
 // test fail_mint_id_token() fail {
 //   let redeemer =
 //     MyRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
@@ -125,24 +158,11 @@ test success_mint_identity_token() {
 //   identity_token.mint(redeemer, mock_policy_id(0), tx)
 // }
 
-// {
-//     constructor: 0,
-//     fields: [
-//         {
-//             bytes: "pub_key_hash"
-//         },
-//         {
-//             constructor: 0,
-//             fields: []
-//         }
-//     ]
+// test redeemer_hex() {
+//   let redeemer =
+//     IdRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
+//   cbor.serialise(redeemer) == #"d8799f581c1b25744c74cf166de9feee1ae6f8cc8b7281a12e6f4d503bb2ecc67cd87980ff"
 // }
-
-test redeemer_hex() {
-  let redeemer =
-    MyRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
-  cbor.serialise(redeemer) == #"d8799f581c1b25744c74cf166de9feee1ae6f8cc8b7281a12e6f4d503bb2ecc67cd87980ff"
-}
 // test to_datum() {
 //   let dummy_datum: Data = "abc"
 
