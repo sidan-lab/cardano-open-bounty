@@ -5,7 +5,7 @@ pub type Action {
   CheckBurn
 }
 
-pub type MyRedeemer {
+pub type IdRedeemer {
   pub_key_hash: ByteArray,
   action: Action,
 }

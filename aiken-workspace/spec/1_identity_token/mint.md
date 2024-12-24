@@ -15,8 +15,8 @@ type Contribution {
    amount: Int
 }
 ```
-
-## User Action
+ 
+## User Action 
 
 Redeemer of Format: `pub_key_hash`: user's public key hash
 
