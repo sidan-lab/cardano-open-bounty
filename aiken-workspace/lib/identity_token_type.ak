@@ -11,6 +11,7 @@ pub type IdRedeemer {
 }
 
 pub type ContributerDatum {
+  index: Int,
   github: String,
   contributions: List<Contribution>,
 }

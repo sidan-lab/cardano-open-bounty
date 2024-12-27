@@ -2,33 +2,45 @@
 
 ## Parameter
 
+```rs
+validator identity_token(collection_name: ByteArray, oracle_nft: (PolicyId, AssetName), oracle_counter: (PolicyId, AssetName))
+```
+
 ## Datum
 
 ```rs
-type ContributerDatum {
+pub type ContributerDatum {
    github: String,
    contributions: List<Contribution>
 }
 
-type Contribution {
+pub type Contribution {
    signers: List<PubKeyHash>,
    amount: Int
 }
 ```
- 
-## User Action 
 
-Redeemer of Format: `pub_key_hash`: user's public key hash
+## Redeemer
+
+```rs
+pub type OracleRedeemer {
+  MintPlutusNFT
+  StopOracle
+}
+```
+
+## User Action
 
 1. Mint - Redeemer `RMint`
-   - Check required signers for the `pub_key_hash` specified in redeemer
+
    - Check if mint one reference token and one nft only
-   - Check policy id and asset prefix name 
-   - Check that asset name == prefix + `pub_key_hash`
+   - Check policy id and asset prefix name (collection_name)
+   - Check that asset name == prefix + oracle_counter.index
+   - Check oracle_counter.index++
    - Check specific datum output at reference token is of `ContributerDatum` format
+   - Check output to oracle_nft.id_token_store_address
 
 2. Burn - Redeemer `RBurn`
-   - Check required signers for the `pub_key_hash` specified in redeemer
-   - Check if mint one reference token and one nft only
+   - Check if burn one reference token and one nft only
    - Check policy id and asset prefix name
-   - Check that asset name == prefix + `pub_key_hash`
+   - Check that asset name == prefix + oracle_counter.index

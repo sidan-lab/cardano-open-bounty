@@ -131,7 +131,9 @@ test success_mint_identity_token() {
               bytearray.concat(#"000643b0", mock_pub_key_hash(0)),
               1,
             ),
-            InlineDatum(ContributerDatum { github: @"abc", contributions: [] }),
+            InlineDatum(
+              ContributerDatum { index: 0, github: @"abc", contributions: [] },
+            ),
           ),
         )
   // InlineDatum(redeemer),
@@ -146,6 +148,11 @@ test success_mint_identity_token() {
 test address_check() {
   let ref_token_hold_address: Address = from_script("ref_token_hold")
   cbor.serialise(ref_token_hold_address) != "d8799fd87a9f4e7265665f746f6b656e5f686f6c64ffd87a80ff"
+}
+
+test param_test() {
+  let param: (PolicyId, AssetName) = ("abc", "")
+  cbor.serialise(param) == ""
 }
 // test fail_mint_id_token() fail {
 //   let redeemer =
