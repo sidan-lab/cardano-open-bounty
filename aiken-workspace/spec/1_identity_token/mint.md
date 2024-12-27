@@ -20,15 +20,6 @@ pub type Contribution {
 }
 ```
 
-## Redeemer
-
-```rs
-pub type OracleRedeemer {
-  MintPlutusNFT
-  StopOracle
-}
-```
-
 ## User Action
 
 1. Mint - Redeemer `RMint`
@@ -36,7 +27,6 @@ pub type OracleRedeemer {
    - Check if mint one reference token and one nft only
    - Check policy id and asset prefix name (collection_name)
    - Check that asset name == prefix + oracle_counter.index
-   - Check oracle_counter.index++
    - Check specific datum output at reference token is of `ContributerDatum` format
    - Check output to oracle_nft.id_token_store_address
 

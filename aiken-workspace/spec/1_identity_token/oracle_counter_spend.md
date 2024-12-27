@@ -28,7 +28,7 @@ pub type OracleRedeemer {
 1. Mint - Redeemer `RMint`
 
    - Check input has id_oracle_counter
-   - Check output datum++
+   - Check output datum.count ++
    - Check output datum format
    - Check output only to output_ref
 
