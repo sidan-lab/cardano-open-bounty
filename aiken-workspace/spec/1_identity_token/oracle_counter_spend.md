@@ -25,11 +25,12 @@ pub type OracleRedeemer {
 
 ## User Action
 
-1. Mint - Redeemer `RMint`
+1. MintNFT - Redeemer
 
    - Check input has id_oracle_counter
    - Check output datum.count ++
    - Check output datum format
    - Check output only to output_ref
 
-2.
+2. StopOracle - Redeemer
+   - Check if the oracle in burnt
