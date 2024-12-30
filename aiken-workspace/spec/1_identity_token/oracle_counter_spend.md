@@ -11,6 +11,7 @@ validator id_oracle_counter(OutputReference)
 ```rs
 pub type CounterDatum {
    count: Int
+   owner: Address
 }
 ```
 

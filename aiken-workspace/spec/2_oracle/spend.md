@@ -14,6 +14,7 @@ pub type OracleDatum {
   bounty_board_address: Address,
   id_token_policy_id: PolicyId,
   id_token_store_address: Address,
+  owner: Address
 }
 
 ```
