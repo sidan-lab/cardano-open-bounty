@@ -28,7 +28,7 @@ pub type Contribution {
    - Check policy id and asset prefix name (collection_name)
    - Check that asset name == prefix + oracle_counter.index
    - Check specific datum output at reference token is of `ContributerDatum` format
-   - Check output to oracle_nft.id_token_store_address
+   - Check reference token output to oracle_nft.id_token_store_address
 
 2. Burn - Redeemer `RBurn`
    - Check if burn one reference token and one nft only
