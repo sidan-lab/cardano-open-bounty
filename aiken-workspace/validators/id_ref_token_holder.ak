@@ -19,24 +19,24 @@
 //     let pub_key_hash = ref_asset_name |> bytearray.drop(n: 4)
 //     let nft_asset_name = cip68_222(pub_key_hash)
 
-//     expect Some(nft) =
-//       inputs
-//         |> list.find(
-//             fn(input) {
-//               when
-//                 input.output.value
-//                   |> flatten()
-//                   |> list.find(
-//                       fn((policy, asset_name, _)) {
-//                         asset_name == nft_asset_name && policy == policy_id
-//                       },
-//                     )
-//               is {
-//                 Some(_) -> True
-//                 _ -> False
-//               }
-//             },
-//           )
+    // expect Some(nft) =
+    //   inputs
+    //     |> list.find(
+    //         fn(input) {
+    //           when
+    //             input.output.value
+    //               |> flatten()
+    //               |> list.find(
+    //                   fn((policy, asset_name, _)) {
+    //                     asset_name == nft_asset_name && policy == policy_id
+    //                   },
+    //                 )
+    //           is {
+    //             Some(_) -> True
+    //             _ -> False
+    //           }
+    //         },
+    //       )
 //     let datum = ref_output.datum |> to_contributer_datum()
 //     let datum_check = (datum.github != @"")? && (datum.contributions == [])?
 //   }

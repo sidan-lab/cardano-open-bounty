@@ -1,34 +1,36 @@
 # Mint bounty token
 
 ## parameter
-Bounty board
+
+Oracle NFT
 
 ## User Action:
+
 1. Mint - Redeemer
 
-    id_token must be provided
+   - id_token must be provided
 
-    check is the user pkh match the id_token asset name (pkh)
-    {
-        token.value -> get assetname
-        remove cip222 -> get pkh 
-        redeemer.pkh == this.pkh
-    } - > MInt bounty token(assetname,policyid)
+   - check Only one mint at the same time
 
+   - remove prefix get index and github from redeemer
+
+   - check github
+
+ -> MInt bounty token(assetname,policyid)
 
 2. Burn - redeemer
-    check same pkh and policy id NFT
-    -> burn
+   - check id token
+   - check signatories 
+   -> burn
 
-  
 3. Output contain money, minted NFT,
-    write datum
-    (
-        creater github
-        bounty money  
-    )
+     write datum(
+   - creater github
+   - bounty money  
+   )
 
 ## Requirement:
+
 1. Only one bounty token mint at the same time
 2. bounty token can be minted iff user input provide valid ID token
-3. only send to bounty board address 
+3. only send to bounty board address
