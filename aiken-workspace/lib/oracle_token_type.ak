@@ -2,11 +2,25 @@ use aiken/cbor
 use cardano/address.{Address, from_script}
 use cardano/assets.{PolicyId}
 
+pub type Action {
+  CheckMint
+  CheckBurn
+}
+
 pub type OracleDatum {
   bounty_token_policy_id: PolicyId,
   bounty_board_address: Address,
   id_token_policy_id: PolicyId,
   id_token_store_address: Address,
+}
+
+pub type OracleCounterDatum {
+  count: Int,
+}
+
+pub type OracleCounterRedeemer {
+  MintNFT
+  StopOracle
 }
 
 test oracle_datum() {
