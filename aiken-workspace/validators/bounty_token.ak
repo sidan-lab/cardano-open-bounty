@@ -4,10 +4,12 @@ use bounty_token_type.{
   BountyDatum, BountyRedeemer, CheckBurn, CheckMint, to_bounty_datum,
 }
 use cardano/address.{from_script}
-use cardano/assets.{AssetName, PolicyId, from_asset, quantity_of}
+use cardano/assets.{
+  AssetName, PolicyId, flatten, from_asset, from_lovelace, lovelace_of, merge,
+}
 use cardano/transaction.{InlineDatum, Input, Transaction} as tx
-use cip.{cip68_222}
-use mocktail.{ add_output, complete, mint, mock_tx_hash, mocktail_tx, ref_tx_in,
+use mocktail.{
+  MocktailTx, add_output, complete, mint, mock_tx_hash, mocktail_tx, ref_tx_in,
   ref_tx_in_inline_datum, tx_in,
 }
 use mocktail/virgin_key_hash.{mock_policy_id, mock_pub_key_hash}
@@ -21,55 +23,80 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
     let Transaction { inputs, mint, outputs, reference_inputs, .. } =
       transaction
 
-    //got the oracle nft 
-    let oracle_input_datum: OracleDatum =
-      reference_inputs |> get_oracle_nft_datum(oracle_token)
-
-    let user_pkh = redeemer.pub_key_hash
-    let id_token_asset_name = cip.cip68_222(redeemer.pub_key_hash)
-
     expect [Pair(asset_name, amount)] =
       mint
         |> assets.tokens(policy_id)
         |> dict.to_pairs()
 
-    expect Some(bounty_nft_output) =
-      outputs
-        |> list.find(
-            fn(output) {
-              output.address == oracle_input_datum.bounty_board_address
-            },
-          )
-
-    // user pkh
-    // check identify token exceed
-    expect Some(_id_nft_input) =
-      inputs
-        |> list.find(
-            fn(input: Input) {
-              (
-                input.output.value
-                  |> quantity_of(
-                      oracle_input_datum.id_token_policy_id,
-                      id_token_asset_name,
-                    )
-              ) > 0
-            },
-          )
-
+    let oracle_input_datum: OracleDatum =
+      reference_inputs |> get_oracle_nft_datum(oracle_token)
     //check redeemer
     let redeemer_check =
       when redeemer.action is {
-        CheckMint -> asset_name == user_pkh && amount == 1
-        CheckBurn -> (amount == -1)?
-      }
-    let datum = bounty_nft_output.datum |> to_bounty_datum()
-    let datum_check = (datum.github != @"")?
+        CheckMint -> {
+          //got the oracle nft 
 
-    and {
-      redeemer_check?,
-      datum_check?,
-    }
+          expect Some(_bounty_nft_output) =
+            outputs
+              |> list.find(
+                  fn(output) {
+                    let address_check =
+                      (output.address == oracle_input_datum.bounty_board_address)?
+
+                    let datum = output.datum |> to_bounty_datum()
+                    let datum_check =
+                      (lovelace_of(output.value) >= datum.reward)?
+
+                    address_check && datum_check
+                  },
+                )
+
+          // expect id token policy id == bounty token policy id
+          expect Some(_id_nft) =
+            inputs
+              |> list.find(
+                  fn(input) {
+                    when
+                      input.output.value
+                        |> flatten()
+                        |> list.find(
+                            fn((policy, _, _)) {
+                              policy == oracle_input_datum.id_token_policy_id
+                            },
+                          )
+                    is {
+                      Some(_) -> True
+                      _ -> False
+                    }
+                  },
+                )
+          amount == 1
+        }
+        CheckBurn -> {
+          expect Some(_id_nft) =
+            inputs
+              |> list.find(
+                  fn(input) {
+                    when
+                      input.output.value
+                        |> flatten()
+                        |> list.find(
+                            fn((policy, _, _)) {
+                              policy == oracle_input_datum.id_token_policy_id
+                            },
+                          )
+                    is {
+                      Some(_) -> True
+                      _ -> False
+                    }
+                  },
+                )
+
+          amount == -1
+        }
+      }
+
+    redeemer_check?
   }
 
   else(_) {
@@ -80,62 +107,251 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
 //test case
 
 //I: successfully mint
+fn successful_mint_tx() -> Transaction {
+  mocktail_tx()
+    |> mint(True, 1, mock_policy_id(0), "token1")
+    |> tx_in(
+        True,
+        mock_tx_hash(0),
+        0,
+        merge(
+          from_lovelace(100000000000),
+          from_asset(mock_policy_id(0), "abc", 1),
+        ),
+        from_script("ref_token_hold"),
+      )
+    |> ref_tx_in(
+        True,
+        mock_tx_hash(0),
+        0,
+        from_asset(mock_policy_id(0), "oracle", 1),
+        from_script("ref_token_hold"),
+      )
+    |> ref_tx_in_inline_datum(
+        True,
+        OracleDatum {
+          bounty_token_policy_id: mock_policy_id(0),
+          bounty_board_address: from_script("bounty_board_hold"),
+          id_token_policy_id: mock_policy_id(0),
+          id_token_store_address: from_script("ref_token_hold"),
+        },
+      )
+    |> complete()
+    |> add_output(
+        True,
+        mock_script_output(
+          from_script("bounty_board_hold"),
+          merge(
+            from_lovelace(100000000000),
+            from_asset(mock_policy_id(0), "abc", 1),
+          ),
+          InlineDatum(
+            BountyDatum {
+              issue_url: [],
+              reward: 100000000000,
+              extra_signatories: [mock_pub_key_hash(0)],
+            },
+          ),
+        ),
+      )
+}
+
 test successful_mint_bounty_token() {
-  let bounty_redeemer =
-    BountyRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
+  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+
+  let tx: Transaction = successful_mint_tx()
+  bounty_token.mint(
+    (mock_policy_id(0), "oracle"),
+    bounty_redeemer,
+    mock_policy_id(0),
+    tx,
+  )
+}
+
+test missing_id_token_check() fail {
+  let bounty_redeemer = BountyRedeemer { action: CheckMint }
   let tx: Transaction =
-    mocktail_tx()
-      |> mint(True, 1, mock_policy_id(0), mock_pub_key_hash(0))
+    MocktailTx {
+      tx: Transaction { ..successful_mint_tx(), inputs: [] },
+      queue_input: None,
+      queue_output: None,
+      queue_ref_input: None,
+    }
       |> tx_in(
           True,
           mock_tx_hash(0),
           0,
-          from_asset(mock_policy_id(0), cip.cip68_222(mock_pub_key_hash(0)), 1),
+          from_lovelace(100000000000),
           from_script("ref_token_hold"),
         )
-      |> ref_tx_in(
+      |> complete()
+
+  bounty_token.mint(
+    (mock_policy_id(0), "oracle"),
+    bounty_redeemer,
+    mock_policy_id(0),
+    tx,
+  )
+}
+
+test invalid_id_tkn() fail {
+  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let tx: Transaction =
+    MocktailTx {
+      tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
+      queue_input: None,
+      queue_output: None,
+      queue_ref_input: None,
+    }
+      |> tx_in(
           True,
           mock_tx_hash(0),
           0,
-          from_asset(mock_policy_id(0), "oracle", 1),
+          merge(
+            from_lovelace(100000000000),
+            from_asset(mock_policy_id(1), "bcd", 1),
+          ),
           from_script("ref_token_hold"),
-        )
-      |> ref_tx_in_inline_datum(
-          True,
-          OracleDatum {
-            bounty_token_policy_id: mock_policy_id(0),
-            bounty_board_address: from_script("bounty_board_hold"),
-            id_token_policy_id: mock_policy_id(0),
-            id_token_store_address: from_script("ref_token_hold"),
-          },
         )
       |> complete()
       |> add_output(
           True,
           mock_script_output(
             from_script("bounty_board_hold"),
-            from_asset(mock_policy_id(0), "oracle", 1),
-            InlineDatum(BountyDatum { github: @"abc", reward: 1 }),
+            merge(
+              from_lovelace(100000000000),
+              from_asset(mock_policy_id(1), "bcd", 1),
+            ),
+            InlineDatum(
+              BountyDatum {
+                issue_url: [],
+                reward: 100000000000,
+                extra_signatories: [mock_pub_key_hash(0)],
+              },
+            ),
           ),
         )
 
-  let oracle_token: (PolicyId, AssetName) = (mock_policy_id(0), "oracle")
-
-  bounty_token.mint(oracle_token, bounty_redeemer, mock_policy_id(0), tx)
+  bounty_token.mint(
+    (mock_policy_id(0), "oracle"),
+    bounty_redeemer,
+    mock_policy_id(0),
+    tx,
+  )
 }
-//II: unsuccessful -> missing id_token
-// test id_token_check()
-// {
 
-// }
+test no_lovelace() fail {
+  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let tx: Transaction =
+    MocktailTx {
+      tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
+      queue_input: None,
+      queue_output: None,
+      queue_ref_input: None,
+    }
+      |> tx_in(
+          True,
+          mock_tx_hash(0),
+          0,
+          from_asset(mock_policy_id(0), "abc", 1),
+          from_script("ref_token_hold"),
+        )
+      |> complete()
+      |> add_output(
+          True,
+          mock_script_output(
+            from_script("bounty_board_hold"),
+            from_asset(mock_policy_id(0), "abc", 1),
+            InlineDatum(
+              BountyDatum {
+                issue_url: [],
+                reward: 100000000000,
+                extra_signatories: [mock_pub_key_hash(0)],
+              },
+            ),
+          ),
+        )
+  bounty_token.mint(
+    (mock_policy_id(0), "oracle"),
+    bounty_redeemer,
+    mock_policy_id(0),
+    tx,
+  )
+}
 
-//III: >=1 bounty token
-// test mutiple_bounty_mint_check()
-// {
+test lesser_lovelace() fail {
+  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let tx: Transaction =
+    MocktailTx {
+      tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
+      queue_input: None,
+      queue_output: None,
+      queue_ref_input: None,
+    }
+      |> tx_in(
+          True,
+          mock_tx_hash(0),
+          0,
+          merge(from_lovelace(100000), from_asset(mock_policy_id(0), "abc", 1)),
+          from_script("ref_token_hold"),
+        )
+      |> complete()
+      |> add_output(
+          True,
+          mock_script_output(
+            from_script("bounty_board_hold"),
+            merge(
+              from_lovelace(100000),
+              from_asset(mock_policy_id(0), "abc", 1),
+            ),
+            InlineDatum(
+              BountyDatum {
+                issue_url: [],
+                reward: 100000000000,
+                extra_signatories: [mock_pub_key_hash(0)],
+              },
+            ),
+          ),
+        )
+  bounty_token.mint(
+    (mock_policy_id(0), "oracle"),
+    bounty_redeemer,
+    mock_policy_id(0),
+    tx,
+  )
+}
 
-// }
-//IV: output address is not bounty board
-// test output_check()
-// {
-
-// }
+test invalid_address() fail {
+  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let tx: Transaction =
+    MocktailTx {
+      tx: Transaction { ..successful_mint_tx(), outputs: [] },
+      queue_input: None,
+      queue_output: None,
+      queue_ref_input: None,
+    }
+      |> complete()
+      |> add_output(
+          True,
+          mock_script_output(
+            from_script("ref_token_hold"),
+            merge(
+              from_lovelace(100000000000),
+              from_asset(mock_policy_id(0), "abc", 1),
+            ),
+            InlineDatum(
+              BountyDatum {
+                issue_url: [],
+                reward: 100000000000,
+                extra_signatories: [mock_pub_key_hash(0)],
+              },
+            ),
+          ),
+        )
+  bounty_token.mint(
+    (mock_policy_id(0), "oracle"),
+    bounty_redeemer,
+    mock_policy_id(0),
+    tx,
+  )
+}

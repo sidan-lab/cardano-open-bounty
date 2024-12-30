@@ -1,5 +1,6 @@
-use cardano/assets.{Value}
+
 use cardano/transaction.{Datum, InlineDatum} as tx
+use aiken/crypto.{VerificationKeyHash}
 
 pub type Action {
   CheckMint
@@ -7,13 +8,13 @@ pub type Action {
 }
 
 pub type BountyRedeemer {
-  pub_key_hash: ByteArray,
   action: Action,
 }
 
 pub type BountyDatum {
-  github: String,
+  issue_url: Data,
   reward: Int,
+  extra_signatories: List<VerificationKeyHash>,
 }
 
 pub fn to_bounty_datum(data: Datum) -> BountyDatum {
