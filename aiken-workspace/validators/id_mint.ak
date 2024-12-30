@@ -11,8 +11,8 @@ use identity_token_type.{
   CheckBurn, CheckMint, ContributerDatum, IdRedeemer, to_contributer_datum,
 }
 use mocktail.{
-  add_output, complete, mint, mock_tx_hash, mocktail_tx, ref_tx_in,
-  ref_tx_in_inline_datum, required_signer_hash,
+  add_output, complete, mint, mock_pub_key_address, mock_tx_hash, mocktail_tx,
+  ref_tx_in, ref_tx_in_inline_datum, required_signer_hash,
 }
 use mocktail/virgin_key_hash.{mock_policy_id, mock_pub_key_hash}
 use mocktail/virgin_outputs.{mock_script_output}
@@ -135,6 +135,7 @@ test success_mint_identity_token() {
             bounty_board_address: from_script("bounty_board_hold"),
             id_token_policy_id: mock_policy_id(1),
             id_token_store_address: from_script("ref_token_hold"),
+            owner: mock_pub_key_address(0, None),
           },
         )
       |> ref_tx_in(
@@ -144,7 +145,10 @@ test success_mint_identity_token() {
           from_asset(mock_policy_id(3), "", 1),
           from_script("ref_token_hold"),
         )
-      |> ref_tx_in_inline_datum(True, OracleCounterDatum { count: 10 })
+      |> ref_tx_in_inline_datum(
+          True,
+          OracleCounterDatum { count: 10, owner: mock_pub_key_address(0, None) },
+        )
       |> complete()
       |> add_output(
           True,
@@ -219,6 +223,7 @@ test fail_mint_identity_token() {
             bounty_board_address: from_script("bounty_board_hold"),
             id_token_policy_id: mock_policy_id(1),
             id_token_store_address: from_script("ref_token_hold"),
+            owner: mock_pub_key_address(0, None),
           },
         )
       |> ref_tx_in(
@@ -228,7 +233,10 @@ test fail_mint_identity_token() {
           from_asset(mock_policy_id(4), "", 1),
           from_script("ref_token_hold"),
         )
-      |> ref_tx_in_inline_datum(True, OracleCounterDatum { count: 10 })
+      |> ref_tx_in_inline_datum(
+          True,
+          OracleCounterDatum { count: 10, owner: mock_pub_key_address(0, None) },
+        )
       |> complete()
       |> add_output(
           True,
@@ -245,7 +253,6 @@ test fail_mint_identity_token() {
             ),
           ),
         )
-  // InlineDatum(redeemer),
   !identity_token.mint(
     collection_name,
     (mock_policy_id(2), "oracle"),
