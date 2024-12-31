@@ -8,7 +8,7 @@ use cardano/transaction.{InlineDatum, Transaction} as tx
 use cip.{cip68_100, cip68_222}
 use cocktail/vodka_converter.{convert_int_to_bytes}
 use identity_token_type.{
-  CheckBurn, CheckMint, ContributerDatum, IdRedeemer, to_contributer_datum,
+  Action, CheckBurn, CheckMint, ContributerDatum, to_contributer_datum,
 }
 use mocktail.{
   add_output, complete, mint, mock_pub_key_address, mock_tx_hash, mocktail_tx,
@@ -24,9 +24,8 @@ validator identity_token(
   oracle_nft: (PolicyId, AssetName),
   oracle_counter: PolicyId,
 ) {
-  mint(redeemer: IdRedeemer, policy_id: PolicyId, transaction: Transaction) {
-    let Transaction { mint, extra_signatories, outputs, reference_inputs, .. } =
-      transaction
+  mint(redeemer: Action, policy_id: PolicyId, transaction: Transaction) {
+    let Transaction { mint, outputs, reference_inputs, .. } = transaction
 
     expect oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
@@ -39,7 +38,6 @@ validator identity_token(
       mint
         |> assets.tokens(policy_id)
         |> dict.to_pairs()
-    let signer_check = extra_signatories |> list.has(redeemer.pub_key_hash)
     let ref_tkn =
       cip.cip68_100(collection_name)
         |> concat(convert_int_to_bytes(oracle_counter_datum.count))
@@ -70,7 +68,7 @@ validator identity_token(
       }
 
     let redeemer_check =
-      when redeemer.action is {
+      when redeemer is {
         CheckMint ->
           if asset_name_1 == ref_tkn {
             asset_name_2 == nft_tkn
@@ -86,7 +84,6 @@ validator identity_token(
     let datum_check = (datum.github != @"")? && (datum.contributions == [])?
 
     and {
-      signer_check?,
       ref_output_check?,
       redeemer_check?,
       datum_check?,
@@ -99,8 +96,7 @@ validator identity_token(
 }
 
 test success_mint_identity_token() {
-  let id_redeemer =
-    IdRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
+  let id_redeemer = CheckMint
 
   let collection_name = "id"
 
@@ -187,8 +183,7 @@ test param_test() {
 }
 
 test fail_mint_identity_token() {
-  let id_redeemer =
-    IdRedeemer { pub_key_hash: mock_pub_key_hash(0), action: CheckMint }
+  let id_redeemer = CheckMint
 
   let collection_name = "id"
 

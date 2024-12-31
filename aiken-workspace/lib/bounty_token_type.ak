@@ -1,6 +1,5 @@
-
-use cardano/transaction.{Datum, InlineDatum} as tx
 use aiken/crypto.{VerificationKeyHash}
+use cardano/transaction.{Datum, InlineDatum} as tx
 
 pub type Action {
   CheckMint
