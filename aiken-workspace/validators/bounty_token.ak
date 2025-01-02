@@ -1,6 +1,5 @@
 use aiken/collection/dict
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash}
 use aiken/primitive/bytearray.{starts_with}
 use bounty_token_type.{
   BountyDatum, BountyRedeemer, CheckBurn, CheckMint, to_bounty_datum,
@@ -167,7 +166,6 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
 
           let update_check =
             updated_ref_token_datum == ContributerDatum {
-              index: input_contributer_datum.index,
               github: input_contributer_datum.github,
               contributions: input_contributer_datum.contributions
                 |> list.push(
@@ -264,7 +262,7 @@ fn successful_burn_tx() -> Transaction {
       )
     |> tx_in_inline_datum(
         True,
-        ContributerDatum { index: 0, github: @"abc", contributions: [] },
+        ContributerDatum { github: @"abc", contributions: [] },
       )
     |> tx_in(
         True,
@@ -321,7 +319,6 @@ fn successful_burn_tx() -> Transaction {
           ),
           InlineDatum(
             ContributerDatum {
-              index: 0,
               github: @"abc",
               contributions: [
                 Contribution {
@@ -567,7 +564,7 @@ test missing_ref_token_burn_check() fail {
         )
       |> tx_in_inline_datum(
           True,
-          ContributerDatum { index: 0, github: @"abc", contributions: [] },
+          ContributerDatum { github: @"abc", contributions: [] },
         )
       |> complete()
 
@@ -741,7 +738,6 @@ test invalid_signatory_check() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                index: 0,
                 github: @"abc",
                 contributions: [
                   Contribution {
@@ -826,7 +822,6 @@ test invalid_index() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                index: 2,
                 github: @"abc",
                 contributions: [
                   Contribution {
@@ -871,7 +866,6 @@ test invalid_github() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                index: 0,
                 github: @"wrong_abc",
                 contributions: [
                   Contribution {
@@ -916,7 +910,6 @@ test missing_updated_reward() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                index: 0,
                 github: @"abc",
                 contributions: [
                   Contribution {

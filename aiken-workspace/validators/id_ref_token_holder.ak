@@ -140,7 +140,7 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
       )
     |> tx_in_inline_datum(
         is_id_nft_check,
-        ContributerDatum { index: 0, github: @"abc", contributions: [] },
+        ContributerDatum { github: @"abc", contributions: [] },
       )
     |> tx_in(
         is_bounty_nft_check,
