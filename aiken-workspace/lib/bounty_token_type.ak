@@ -14,7 +14,7 @@ pub type BountyRedeemer {
 pub type BountyDatum {
   issue_url: Data,
   reward: Int,
-  extra_signatories: List<VerificationKeyHash>,
+  all_signatories: List<VerificationKeyHash>,
 }
 
 pub fn to_bounty_datum(data: Datum) -> BountyDatum {

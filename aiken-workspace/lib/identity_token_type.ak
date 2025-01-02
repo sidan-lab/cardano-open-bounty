@@ -1,3 +1,4 @@
+use aiken/crypto.{VerificationKeyHash}
 use cardano/transaction.{Datum, InlineDatum} as tx
 
 pub type Action {
@@ -17,8 +18,8 @@ pub type ContributerDatum {
 }
 
 pub type Contribution {
-  signers: List<ByteArray>,
-  amount: Int,
+  all_signatories: List<VerificationKeyHash>,
+  reward: Int,
 }
 
 pub fn to_contributer_datum(data: Datum) -> ContributerDatum {
