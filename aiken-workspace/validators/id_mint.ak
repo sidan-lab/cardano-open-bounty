@@ -167,9 +167,7 @@ fn mock_mint_tx(
             1,
           ),
           if is_datum_check {
-            InlineDatum(
-              ContributerDatum { index: 0, github: @"abc", contributions: [] },
-            )
+            InlineDatum(ContributerDatum { github: @"abc", contributions: [] })
           } else {
             InlineDatum(
               OracleDatum {

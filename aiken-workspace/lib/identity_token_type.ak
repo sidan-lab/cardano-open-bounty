@@ -7,7 +7,6 @@ pub type Action {
 }
 
 pub type ContributerDatum {
-  index: Int,
   github: String,
   contributions: List<Contribution>,
 }
