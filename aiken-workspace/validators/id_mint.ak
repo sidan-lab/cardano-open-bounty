@@ -211,7 +211,7 @@ test success_mint_identity_token() {
   )
 }
 
-test fail_mint_identity_token_with_no_counter() {
+test fail_mint_identity_token_with_no_counter() fail {
   let collection_name = "id"
   let id_redeemer = CheckMint
 
@@ -227,7 +227,7 @@ test fail_mint_identity_token_with_no_counter() {
       collection_name: collection_name,
     )
 
-  !identity_token.mint(
+  identity_token.mint(
     collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
@@ -237,7 +237,7 @@ test fail_mint_identity_token_with_no_counter() {
   )
 }
 
-test fail_mint_identity_token_with_no_oracle() {
+test fail_mint_identity_token_with_no_oracle() fail {
   let collection_name = "id"
   let id_redeemer = CheckMint
 
@@ -253,7 +253,7 @@ test fail_mint_identity_token_with_no_oracle() {
       collection_name: collection_name,
     )
 
-  !identity_token.mint(
+  identity_token.mint(
     collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
@@ -263,7 +263,7 @@ test fail_mint_identity_token_with_no_oracle() {
   )
 }
 
-test fail_mint_identity_token_with_no_ref_output() {
+test fail_mint_identity_token_with_no_ref_output() fail {
   let collection_name = "id"
   let id_redeemer = CheckMint
 
@@ -279,7 +279,7 @@ test fail_mint_identity_token_with_no_ref_output() {
       collection_name: collection_name,
     )
 
-  !identity_token.mint(
+  identity_token.mint(
     collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
@@ -289,7 +289,7 @@ test fail_mint_identity_token_with_no_ref_output() {
   )
 }
 
-test fail_mint_identity_token_with_no_redeeme() {
+test fail_mint_identity_token_with_no_redeeme() fail {
   let collection_name = "id"
   let id_redeemer = CheckMint
 
@@ -305,7 +305,7 @@ test fail_mint_identity_token_with_no_redeeme() {
       collection_name: collection_name,
     )
 
-  !identity_token.mint(
+  identity_token.mint(
     collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
@@ -315,7 +315,7 @@ test fail_mint_identity_token_with_no_redeeme() {
   )
 }
 
-test fail_mint_identity_token_with_no_datumn() {
+test fail_mint_identity_token_with_no_datumn() fail {
   let collection_name = "id"
   let id_redeemer = CheckMint
 
@@ -331,7 +331,7 @@ test fail_mint_identity_token_with_no_datumn() {
       collection_name: collection_name,
     )
 
-  !identity_token.mint(
+  identity_token.mint(
     collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
@@ -397,7 +397,7 @@ fn mock_burn_tx(
         mock_pub_key_address(0, None),
       )
     |> tx_in(
-        is_redeemer_check,
+        is_token_inputed,
         mock_tx_hash(1),
         0,
         from_asset(
@@ -464,7 +464,7 @@ test success_burn_identity_token() {
   )
 }
 
-test fail_burn_identity_token_with_no_input() {
+test fail_burn_identity_token_with_no_redeemer() fail {
   let collection_name = "id"
   let id_redeemer = CheckBurn
 
@@ -473,13 +473,13 @@ test fail_burn_identity_token_with_no_input() {
       BurnTestCase {
         is_counter_inputed: True,
         is_oracle_inputed: True,
-        is_redeemer_check: True,
-        is_token_inputed: False,
+        is_redeemer_check: False,
+        is_token_inputed: True,
       },
       collection_name: collection_name,
     )
 
-  !identity_token.mint(
+  identity_token.mint(
     collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),

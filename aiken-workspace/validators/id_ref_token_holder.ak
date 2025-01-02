@@ -172,7 +172,7 @@ test success_spend_identity_token() {
   )
 }
 
-test fail_spend_identity_token_with_wrong_name() {
+test fail_spend_identity_token_with_wrong_name() fail {
   let tx =
     mock_spend_tx(
       SpendTestCase {
@@ -183,7 +183,7 @@ test fail_spend_identity_token_with_wrong_name() {
       },
     )
 
-  !update_identity_token.spend(
+  update_identity_token.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
@@ -192,7 +192,7 @@ test fail_spend_identity_token_with_wrong_name() {
   )
 }
 
-test fail_spend_identity_token_with_no_oracle() {
+test fail_spend_identity_token_with_no_oracle() fail {
   let tx =
     mock_spend_tx(
       SpendTestCase {
@@ -203,7 +203,7 @@ test fail_spend_identity_token_with_no_oracle() {
       },
     )
 
-  !update_identity_token.spend(
+  update_identity_token.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
@@ -212,7 +212,7 @@ test fail_spend_identity_token_with_no_oracle() {
   )
 }
 
-test fail_spend_identity_token_with_no_id_nft() {
+test fail_spend_identity_token_with_no_id_nft() fail {
   let tx =
     mock_spend_tx(
       SpendTestCase {
@@ -223,7 +223,7 @@ test fail_spend_identity_token_with_no_id_nft() {
       },
     )
 
-  !update_identity_token.spend(
+  update_identity_token.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
@@ -232,7 +232,7 @@ test fail_spend_identity_token_with_no_id_nft() {
   )
 }
 
-test fail_spend_identity_token_with_no_bounty_nft() {
+test fail_spend_identity_token_with_no_bounty_nft() fail {
   let tx =
     mock_spend_tx(
       SpendTestCase {
@@ -243,7 +243,7 @@ test fail_spend_identity_token_with_no_bounty_nft() {
       },
     )
 
-  !update_identity_token.spend(
+  update_identity_token.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
