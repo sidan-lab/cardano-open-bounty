@@ -3,11 +3,7 @@ use aiken/collection/dict
 use aiken/collection/list
 use cardano/assets.{PolicyId}
 use cardano/transaction.{OutputReference, Transaction}
-
-pub type Action {
-  CheckMint
-  CheckBurn
-}
+use oracle_token_type.{Action, CheckBurn, CheckMint}
 
 validator one_shot(utxo_ref: OutputReference) {
   mint(redeemer: Action, policy_id: PolicyId, self: Transaction) {

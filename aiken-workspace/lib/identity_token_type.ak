@@ -6,11 +6,6 @@ pub type Action {
   CheckBurn
 }
 
-pub type IdRedeemer {
-  pub_key_hash: ByteArray,
-  action: Action,
-}
-
 pub type ContributerDatum {
   index: Int,
   github: String,

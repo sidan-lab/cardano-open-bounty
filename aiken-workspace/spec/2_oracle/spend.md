@@ -9,10 +9,14 @@ validator id_oracle_counter(OutputReference)
 ## Datum
 
 ```rs
-pub type CounterDatum {
-   count: Int
-   owner: Address
+pub type OracleDatum {
+  bounty_token_policy_id: PolicyId,
+  bounty_board_address: Address,
+  id_token_policy_id: PolicyId,
+  id_token_store_address: Address,
+  owner: Address
 }
+
 ```
 
 ## Redeemer
@@ -28,8 +32,7 @@ pub type OracleRedeemer {
 
 1. MintNFT - Redeemer
 
-   - Check input has id_oracle_counter
-   - Check output datum.count ++
+   - Check input has oracle
    - Check output datum format
    - Check output only to output_ref
 
