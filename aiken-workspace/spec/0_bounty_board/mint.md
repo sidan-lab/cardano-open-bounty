@@ -21,6 +21,8 @@ Oracle NFT
 2. Burn - redeemer
    - check id token
    - check signatories 
+   - check contributer datum is update correct
+   
    -> burn
 
 3. Output contain money, minted NFT,
