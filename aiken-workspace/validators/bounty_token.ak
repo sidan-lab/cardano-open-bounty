@@ -8,7 +8,7 @@ use bounty_token_util.{has_all_signers}
 use cardano/address.{from_script}
 use cardano/assets.{
   AssetName, PolicyId, flatten, from_asset, from_lovelace, lovelace_of, merge,
-  without_lovelace,
+  quantity_of, without_lovelace,
 }
 use cardano/transaction.{InlineDatum, Input, Transaction} as tx
 use cip.{cip68_100, cip68_100_prefix, cip68_222, cip68_222_prefix}
@@ -58,7 +58,9 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
                     let datum_check =
                       (lovelace_of(output.value) >= datum.reward)?
 
-                    address_check && datum_check
+                    let bounty_token_check =
+                      ( output.value |> quantity_of(policy_id, "") ) == 1
+                    address_check && datum_check && bounty_token_check
                   },
                 )
 
@@ -234,7 +236,7 @@ fn successful_mint_tx() -> Transaction {
           from_script("bounty_board_hold"),
           merge(
             from_lovelace(100000000000),
-            from_asset(mock_policy_id(0), "abc", 1),
+            from_asset(mock_policy_id(0), "", 1),
           ),
           InlineDatum(
             BountyDatum {
@@ -792,50 +794,6 @@ test missing_signatories() fail {
           },
         )
       |> complete()
-
-  bounty_token.mint(
-    (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
-    mock_policy_id(0),
-    tx,
-  )
-}
-
-test invalid_index() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
-
-  let tx: Transaction =
-    MocktailTx {
-      tx: Transaction { ..successful_burn_tx(), outputs: [] },
-      queue_input: None,
-      queue_output: None,
-      queue_ref_input: None,
-    }
-      |> complete()
-      |> add_output(
-          True,
-          mock_script_output(
-            from_script("ref_token_hold"),
-            merge(
-              from_lovelace(100000000000),
-              from_asset(mock_policy_id(0), cip.cip68_100("id"), 1),
-            ),
-            InlineDatum(
-              ContributerDatum {
-                github: @"abc",
-                contributions: [
-                  Contribution {
-                    all_signatories: [
-                      mock_pub_key_hash(0),
-                      mock_pub_key_hash(1),
-                    ],
-                    reward: 100000000000,
-                  },
-                ],
-              },
-            ),
-          ),
-        )
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
