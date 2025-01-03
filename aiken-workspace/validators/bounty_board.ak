@@ -4,14 +4,12 @@ use bounty_token_type.{BountyDatum, to_bounty_datum}
 use bounty_token_util.{has_all_signers}
 use cardano/address.{from_script}
 use cardano/assets.{
-  AssetName, PolicyId, flatten, from_asset, from_lovelace, lovelace_of, merge,
-  quantity_of, without_lovelace,
+  AssetName, PolicyId, from_asset, from_lovelace, lovelace_of, merge,
+  quantity_of,
 }
 use cardano/transaction.{InlineDatum, OutputReference, Transaction} as tx
-use cip.{cip68_100_prefix, cip68_222, cip68_222_prefix}
 use cocktail/vodka_converter.{convert_int_to_bytes}
 use cocktail/vodka_mints.{only_minted_token}
-use identity_token_type.{ContributerDatum}
 use mocktail.{
   add_extra_signatory, add_output, complete, mock_pub_key_address,
   mock_pub_key_hash, mock_script_address, mock_script_output, mock_tx_hash,
