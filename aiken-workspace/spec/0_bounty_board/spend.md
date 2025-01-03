@@ -2,22 +2,20 @@
 
 ## Parameter
 
-## Datum
+Oracle NFT
 
-- `bounty_creator`: The creator of the bounty
-- `bounty_task`: The task to be finish in order to get the bounty
-- `bounty_amount`: The amount of bounty award
-- `identity_nft_policy_id`: The policy id of `Identity NFT`
-- `identity_nft_asset_name`: The asset name of `Identity NFT`
+## Datum
 
 ## User Action
 
-1. Creatre bounty - Redeemer ``
+1. Update Bounty - Redeemer `UpdateBounty`
 
-   - Validate if the user holds the Reference NFT
-   - Required multi sign
+   - Check bounty token input
+   - Check has all signature
+   - Check datum format
+   - Check output to the same address
 
-2. Sign off bounty - Redeemer ``
+2. Sign off bounty - Redeemer `CheckBurn`
 
-   - Validate if the user holds the Reference NFT
-   - Required multi sign
+   - Check bounty token input
+   - Check if it is burned

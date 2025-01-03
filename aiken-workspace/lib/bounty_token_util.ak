@@ -1,8 +1,6 @@
-use aiken/crypto.{VerificationKeyHash}
 use aiken/collection/list
-use cardano/assets.{AssetName, PolicyId, quantity_of}
-use cardano/transaction.{DatumHash, InlineDatum, Input, NoDatum}
-use bounty_token_type.{BountyDatum}
+use aiken/crypto.{VerificationKeyHash}
+use mocktail.{mock_pub_key_hash}
 
 pub fn has_all_signers(
   all_signers: List<VerificationKeyHash>,
@@ -19,3 +17,20 @@ pub fn has_all_signers(
   }
 }
 
+test address_check() {
+  let all_signers: List<ByteArray> =
+    [
+      mock_pub_key_hash(3),
+      mock_pub_key_hash(2),
+      mock_pub_key_hash(1),
+      mock_pub_key_hash(0),
+    ]
+  let actual_signers: List<ByteArray> =
+    [
+      mock_pub_key_hash(0),
+      mock_pub_key_hash(1),
+      mock_pub_key_hash(2),
+      mock_pub_key_hash(3),
+    ]
+  has_all_signers(all_signers: all_signers, actual_signers: actual_signers)
+}
