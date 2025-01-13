@@ -1,6 +1,7 @@
 use aiken/cbor
 use cardano/address.{Address, from_script}
 use cardano/assets.{PolicyId}
+use mocktail.{mock_utxo_ref}
 use mocktail/virgin_address.{mock_pub_key_address}
 
 pub type Action {
@@ -24,6 +25,12 @@ pub type OracleCounterDatum {
 pub type OracleRedeemer {
   MintNFT
   StopOracle
+}
+
+test oracle_redeemer() {
+  let redeemer: Action = CheckMint
+
+  cbor.serialise(redeemer) == cbor.serialise(mock_utxo_ref(2, 0))
 }
 
 test oracle_datum() {
