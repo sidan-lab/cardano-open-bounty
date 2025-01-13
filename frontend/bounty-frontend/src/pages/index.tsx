@@ -22,9 +22,7 @@ export default function Home() {
 
   const { wallet, connected, connect } = useWallet();
   const [userBalance, setUserBalance] = useState("");
-  const [showProfile, setShowProfile] = useState(false); // State to control profile modal visibility
- 
-  
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     const getWalletBalance = async () => {
@@ -33,8 +31,10 @@ export default function Home() {
     };
     if (connected) {
       getWalletBalance();
+    } else {
+      connect("eternl");
     }
-  }, [connected, wallet]);
+  }, [connect, connected, wallet]);
 
   const handleProfileClick = () => {
     setShowProfile(true); // Show the profile modal when clicked
@@ -44,7 +44,7 @@ export default function Home() {
     <div className="bg-gray-900 w-full text-white text-center">
       <main className={`flex min-h-screen flex-col`}>
         <Disclosure as="nav" className="bg-gray-800 w-full shadow-lg">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="px-4 sm:px-6 lg:px-8">
             <div className="relative flex h-16 items-center justify-between">
               <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
                 <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
@@ -60,8 +60,9 @@ export default function Home() {
                   />
                 </DisclosureButton>
               </div>
-              <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-                <div className="hidden sm:ml-6 sm:block">
+
+              <div className="flex flex-wrap items-center justify-between w-full">
+                <div className="hidden sm:block sm:ml-6 justify-left">
                   <div className="flex space-x-4">
                     {navigation.map((item) => (
                       <a
@@ -71,8 +72,8 @@ export default function Home() {
                         className={classNames(
                           item.current
                             ? "bg-gray-900 text-white"
-                            : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                          "rounded-md px-3 py-2 text-sm font-medium"
+                            : "text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-md px-5 py-2.5 me-2 mb-2 transition duration-200 ease-in-out",
+                          "rounded-md px-3 py-2 text-base font-medium"
                         )}
                       >
                         {item.name}
@@ -81,7 +82,7 @@ export default function Home() {
                     {connected && (
                       <button
                         type="button"
-                        className="text-white bg-blue-600 hover:bg-blue-700 rounded-md px-3 py-2"
+                        className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-md px-5 py-2.5 me-2 mb-2 transition duration-200 ease-in-out"
                         onClick={handleProfileClick}
                       >
                         Profile
@@ -89,25 +90,28 @@ export default function Home() {
                     )}
                   </div>
                 </div>
+
+                <div className="flex items-center space-x-6 justify-end ml-auto">
+                  {connected ? (
+                    <button
+                      type="button"
+                      className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-md px-5 py-2.5 me-2 mb-2 transition duration-200 ease-in-out"
+                    >
+                      {userBalance}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-md px-5 py-2.5 me-2 mb-2 transition duration-200 ease-in-out"
+                      onClick={() => {
+                        connect("eternl"); // Connect wallet, specify the wallet type
+                      }}
+                    >
+                      Connect Wallet
+                    </button>
+                  )}
+                </div>
               </div>
-              {connected ? (
-                <button
-                  type="button"
-                  className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2"
-                >
-                  {userBalance}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2"
-                  onClick={() => {
-                    connect("eternl"); // Connect wallet, specify the wallet type
-                  }}
-                >
-                  Connect Wallet
-                </button>
-              )}
             </div>
           </div>
           <DisclosurePanel className="sm:hidden">
@@ -132,10 +136,8 @@ export default function Home() {
           </DisclosurePanel>
         </Disclosure>
 
-        {/* Render ProfileModal if showProfile is true */}
         {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
 
-        {/* Component to display bounties */}
         <BountyTable />
       </main>
       <footer className="p-8 border-t border-gray-300 flex justify-center">

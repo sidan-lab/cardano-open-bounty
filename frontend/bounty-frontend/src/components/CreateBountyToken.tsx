@@ -4,7 +4,6 @@ interface Bounty {
   name: string;
   tasks: string;
   reward: string;
-  contributions: string;
 }
 
 interface CreateBountyTokenProps {
@@ -19,7 +18,6 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
     name: "",
     tasks: "",
     reward: "",
-    contributions: "",
   });
 
   const handleInputChange = (
@@ -39,7 +37,6 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
       name: "",
       tasks: "",
       reward: "",
-      contributions: "",
     });
     setFormVisible(false);
   };
@@ -47,7 +44,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
   return (
     <div>
       <button
-        className="text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
+        className="text-white bg-text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
         onClick={() => setFormVisible(true)}
       >
         Create Bounty Token
@@ -57,18 +54,22 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-8 rounded-lg shadow-lg z-50 w-1/2">
             <form onSubmit={handleSubmit}>
-              <h2 className="text-lg font-bold text-gray-300 text-center mb-6">
-                Create Bounty
-              </h2>
-              <button
-                type="button"
-                onClick={() => setFormVisible(false)}
-                className="text-gray-300 hover:text-white absolute top-4 left-4"
-              >
-                &#x2190; Back
-              </button>
+              <div className="flex items-center justify-center mb-6 relative">
+                <button
+                  type="button"
+                  onClick={() => setFormVisible(false)}
+                  className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-5 py-2.5 me-2 mb-2 absolute left-0 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+                >
+                  &#x2190; Back
+                </button>
+                <h2 className="text-lg font-bold text-gray-300 text-center flex-grow">
+                  Create Bounty
+                </h2>
+              </div>
               <div className="mb-4">
-                <label className="block text-gray-300">Bounty Name</label>
+                <label className="block text-gray-300">
+                  Bounty name(Project name + Task name)
+                </label>
                 <input
                   type="text"
                   name="name"
@@ -79,7 +80,9 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-300">Tasks</label>
+                <label className="block text-gray-300">
+                  Tasks Details(URL)
+                </label>
                 <textarea
                   name="tasks"
                   value={newBounty.tasks}
@@ -89,9 +92,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-300">
-                  Reward (ADA/Lovelace)
-                </label>
+                <label className="block text-gray-300">Reward (ADA)</label>
                 <input
                   type="number"
                   name="reward"
@@ -99,25 +100,13 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
                   onChange={handleInputChange}
                   required
                   className="mt-1 block w-full bg-gray-700 text-gray-300 rounded px-3 py-2"
-                  min="0" // Setting minimum value to 0
+                  min="0"
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-300">
-                  Contribution Point
-                </label>
-                <input
-                  type="number"
-                  name="contributions"
-                  value={newBounty.contributions}
-                  onChange={handleInputChange}
-                  required
-                  className="mt-1 block w-full bg-gray-700 text-gray-300 rounded px-3 py-2"
-                />
-              </div>
+
               <button
                 type="submit"
-                className="text-white bg-blue-600 hover:bg-blue-700 w-full py-2 rounded mt-4"
+                className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
               >
                 Create Bounty
               </button>

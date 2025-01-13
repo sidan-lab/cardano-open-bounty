@@ -7,15 +7,21 @@ interface Bounty {
   name: string;
   tasks: string;
   reward: string;
-  contributions: string;
 }
 
 const BountyTable: React.FC = () => {
   const { connected } = useWallet();
+
   const [bounties, setBounties] = useState<Bounty[]>([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+  const [hasIDToken, setHasIDToken] = useState(false);
 
+
+  const handleTokenOwnership = (status: boolean) => {
+    setHasIDToken(status);
+  };
+  
   const handleCreateBounty = (newBounty: Bounty) => {
     setBounties((prevState) => [...prevState, newBounty]);
   };
@@ -34,28 +40,31 @@ const BountyTable: React.FC = () => {
   );
 
   return (
-    <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 mt-8 w-full">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-300">Bounty Board</h2>
-        <CreateIDToken />
-        {connected && <CreateBountyToken onCreateBounty={handleCreateBounty} />}
+    <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 mt-8 w-full text-gray-200">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Bounty Board</h2>
+        <div className="flex space-x-2">
+          <CreateIDToken />
+          {connected && hasIDToken && (
+            <CreateBountyToken onCreateBounty={handleCreateBounty} />
+          )}
+        </div>
       </div>
+
       <SearchBars />
+
       <div className="overflow-y-auto h-96">
         <table className="min-w-full divide-y divide-gray-600 border border-gray-600 mt-4">
           <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600">
-                Bounty Name
+              <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider border-b border-gray-600">
+                Creator
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600">
+              <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider border-b border-gray-600">
                 Tasks
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600">
+              <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider border-b border-gray-600">
                 Reward
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600">
-                Contributions
               </th>
             </tr>
           </thead>
@@ -64,7 +73,7 @@ const BountyTable: React.FC = () => {
               <tr>
                 <td
                   className="px-6 py-4 text-sm text-gray-400 text-center"
-                  colSpan={4}
+                  colSpan={3}
                 >
                   No bounties available
                 </td>
@@ -81,50 +90,49 @@ const BountyTable: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 border-b border-gray-600">
                     {bounty.reward}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 border-b border-gray-600">
-                    {bounty.contributions}
-                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
 
-        <div className="mb-4">
-          <label className="text-gray-300" htmlFor="rows-per-page">
-            Show:
-          </label>
-          <select
-            id="rows-per-page"
-            value={rowsPerPage}
-            onChange={handleRowsPerPageChange}
-            className="ml-2 bg-gray-700 text-white rounded"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={15}>15</option>
-          </select>
-        </div>
-        <div className="mt-4 flex justify-between">
-          <button
-            onClick={() => setCurrentPage((curr) => Math.max(1, curr - 1))}
-            disabled={currentPage === 1}
-            className="text-white bg-blue-600 hover:bg-blue-700 rounded px-3 py-1"
-          >
-            Previous
-          </button>
-          <span className="text-gray-300">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() =>
-              setCurrentPage((curr) => Math.min(totalPages, curr + 1))
-            }
-            disabled={currentPage === totalPages}
-            className="text-white bg-blue-600 hover:bg-blue-700 rounded px-3 py-1"
-          >
-            Next
-          </button>
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <label className="text-gray-300" htmlFor="rows-per-page">
+              Show:
+            </label>
+            <select
+              id="rows-per-page"
+              value={rowsPerPage}
+              onChange={handleRowsPerPageChange}
+              className="ml-2 bg-gray-700 text-white rounded px-2"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+            </select>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setCurrentPage((curr) => Math.max(1, curr - 1))}
+              disabled={currentPage === 1}
+              className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-4 py-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+            >
+              Previous
+            </button>
+            <span className="text-gray-300">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() =>
+                setCurrentPage((curr) => Math.min(totalPages, curr + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-4 py-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
