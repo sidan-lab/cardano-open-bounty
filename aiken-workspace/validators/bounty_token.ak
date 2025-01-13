@@ -2,7 +2,7 @@ use aiken/collection/dict
 use aiken/collection/list
 use aiken/primitive/bytearray.{starts_with}
 use bounty_token_type.{
-  BountyDatum, BountyRedeemer, CheckBurn, CheckMint, to_bounty_datum,
+  Action, BountyDatum, CheckBurn, CheckMint, to_bounty_datum,
 }
 use bounty_token_util.{has_all_signers}
 use cardano/address.{from_script}
@@ -24,7 +24,7 @@ use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
 validator bounty_token(oracle_token: (PolicyId, AssetName)) {
-  mint(redeemer: BountyRedeemer, policy_id: PolicyId, transaction: Transaction) {
+  mint(redeemer: Action, policy_id: PolicyId, transaction: Transaction) {
     // destructure the transaction
     let Transaction {
       inputs,
@@ -35,7 +35,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
       ..
     } = transaction
 
-    expect [Pair(asset_name, amount)] =
+    expect [Pair(_, amount)] =
       mint
         |> assets.tokens(policy_id)
         |> dict.to_pairs()
@@ -45,7 +45,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
 
     //check redeemer
     let redeemer_check =
-      when redeemer.action is {
+      when redeemer is {
         CheckMint -> {
           expect Some(_bounty_nft_output) =
             outputs
@@ -124,7 +124,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
             [input0, input1]
               |> list.filter(
                   fn(input) {
-                    expect [(policy, asset_name, 1)] =
+                    expect [(_, asset_name, 1)] =
                       input.output.value |> without_lovelace() |> flatten()
                     asset_name |> starts_with(cip68_100_prefix)
                   },
@@ -134,7 +134,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
             [input0, input1]
               |> list.filter(
                   fn(input) {
-                    expect [(policy, asset_name, 1)] =
+                    expect [(_, asset_name, 1)] =
                       input.output.value |> without_lovelace() |> flatten()
 
                     asset_name |> starts_with(cip68_222_prefix)
@@ -335,7 +335,7 @@ fn successful_burn_tx() -> Transaction {
 }
 
 test successful_mint_bounty_token() {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
 
   let tx: Transaction = successful_mint_tx()
   bounty_token.mint(
@@ -347,7 +347,7 @@ test successful_mint_bounty_token() {
 }
 
 test missing_id_token_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), inputs: [] },
@@ -373,7 +373,7 @@ test missing_id_token_check() fail {
 }
 
 test invalid_id_tkn() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
@@ -419,7 +419,7 @@ test invalid_id_tkn() fail {
 }
 
 test no_lovelace() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
@@ -458,7 +458,7 @@ test no_lovelace() fail {
 }
 
 test lesser_lovelace() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
@@ -500,7 +500,7 @@ test lesser_lovelace() fail {
 }
 
 test invalid_address() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), outputs: [] },
@@ -535,7 +535,7 @@ test invalid_address() fail {
 }
 
 test successful_burn_bounty_token() {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction = successful_burn_tx()
 
@@ -548,7 +548,7 @@ test successful_burn_bounty_token() {
 }
 
 test missing_ref_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -579,7 +579,7 @@ test missing_ref_token_burn_check() fail {
 }
 
 test missing_id_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -606,7 +606,7 @@ test missing_id_token_burn_check() fail {
 }
 
 test missing_bounty_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -633,7 +633,7 @@ test missing_bounty_token_burn_check() fail {
 }
 
 test invalid_id_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -663,7 +663,7 @@ test invalid_id_token_burn_check() fail {
 }
 
 test invalid_ref_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -693,7 +693,7 @@ test invalid_ref_token_burn_check() fail {
 }
 
 test invalid_bounty_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -720,7 +720,7 @@ test invalid_bounty_token_burn_check() fail {
 }
 
 test invalid_signatory_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -764,7 +764,7 @@ test invalid_signatory_check() fail {
 }
 
 test missing_signatories() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -804,7 +804,7 @@ test missing_signatories() fail {
 }
 
 test invalid_github() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -848,7 +848,7 @@ test invalid_github() fail {
 }
 
 test missing_updated_reward() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
