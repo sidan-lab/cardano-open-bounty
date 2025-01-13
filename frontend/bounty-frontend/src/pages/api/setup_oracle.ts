@@ -1,5 +1,3 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { Client } from "@neondatabase/serverless";
 import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
 import blueprint from "../../../../../aiken-workspace/plutus.json";
 import {
@@ -16,29 +14,8 @@ import {
   Data,
   mPubKeyAddress,
 } from "@meshsdk/core";
+import { neon } from "@neondatabase/serverless";
 // import { ActionMint } from "./type";
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method === "POST") {
-    try {
-      const { transactionHash } = req.body;
-      const client = new Client(process.env.DATABASE_URL);
-      await client.connect();
-      await client.query("INSERT INTO transactions (hash) VALUES ($1)", [
-        transactionHash,
-      ]);
-      res.status(201).json({ message: "Transaction hash saved successfully" });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error saving transaction hash" });
-    }
-  } else {
-    res.status(405).json({ message: "Method not allowed" });
-  }
-}
 
 export const mintOracleNFT = async (wallet: BrowserWallet) => {
   if (!wallet) {
@@ -92,7 +69,6 @@ export const mintOracleNFT = async (wallet: BrowserWallet) => {
   );
 
   const OracleNFTPolicyId = resolveScriptHash(OracleNFTMintingScriptCbor, "V3");
-  console.log(OracleNFTPolicyId);
 
   try {
     const unsignedTx = await txBuilder
@@ -130,11 +106,13 @@ export const mintOracleNFT = async (wallet: BrowserWallet) => {
 
     const signedTx = await wallet.signTx(unsignedTx, true);
     const txHash = await wallet.submitTx(signedTx);
-
-    console.log(unsignedTx);
-    console.log(paramUtxo.input);
     console.log(txHash);
-    return { tx: unsignedTx, paramUtxo: paramUtxo.input };
+    console.log(OracleNFTPolicyId);
+    const sql = neon(`${process.env.DATABASE_URL}`);
+    await sql("INSERT INTO cardano_open_bounty (name, utxo) VALUES ($1, $2)", [
+      "oracle_nft",
+      paramUtxo.input,
+    ]);
   } catch (e) {
     console.error(e);
   }
@@ -233,10 +211,14 @@ export const mintOracleCounter = async (wallet: BrowserWallet) => {
     const signedTx = await wallet.signTx(unsignedTx, true);
     const txHash = await wallet.submitTx(signedTx);
 
-    console.log(unsignedTx);
-    console.log(paramUtxo.input);
     console.log(txHash);
-    return { tx: unsignedTx, paramUtxo: paramUtxo.input };
+    console.log(idOracleCounterPolicyId);
+
+    const sql = neon(`${process.env.DATABASE_URL}`);
+    await sql("INSERT INTO cardano_open_bounty (name, utxo) VALUES ($1, $2)", [
+      "id_oracle_counter",
+      paramUtxo.input,
+    ]);
   } catch (e) {
     console.error(e);
   }
