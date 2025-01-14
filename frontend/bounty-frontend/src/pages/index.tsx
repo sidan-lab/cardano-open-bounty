@@ -22,20 +22,20 @@ export default function Home() {
 
   const { wallet, connected, connect } = useWallet();
 
-  const [userBalance, setUserBalance] = useState("");
+  const [, setUserBalance] = useState("");
   const [showProfile, setShowProfile] = useState(false);
 
-  // useEffect(() => {
-  //   const getWalletBalance = async () => {
-  //     const balance = await wallet.getLovelace();
-  //     setUserBalance(balance);
-  //   };
-  //   if (connected) {
-  //     getWalletBalance();
-  //   } else {
-  //     connect("eternl");
-  //   }
-  // }, [connect, connected, wallet]);
+  useEffect(() => {
+    const getWalletBalance = async () => {
+      const balance = await wallet.getLovelace();
+      setUserBalance(balance);
+    };
+    if (connected) {
+      getWalletBalance();
+    } else {
+      connect("eternl");
+    }
+  }, [connect, connected, wallet]);
 
   const handleProfileClick = () => {
     setShowProfile(true); // Show the profile modal when clicked
@@ -90,6 +90,7 @@ export default function Home() {
                       </button>
                     )}
                     <button>Admin</button>
+
                     <button></button>
                     <button></button>
                   </div>
@@ -114,7 +115,7 @@ export default function Home() {
                       Connect Wallet
                     </button>
                   )} */}
-                  <CardanoWallet isDark={false} />
+                  <CardanoWallet />
                 </div>
               </div>
             </div>
@@ -142,8 +143,9 @@ export default function Home() {
         </Disclosure>
 
         {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
-
-        <BountyTable />
+        <div className="min-h-screen flex flex-col">
+          <BountyTable />
+        </div>
       </main>
       <footer className="p-8 border-t border-gray-300 flex justify-center">
         <MeshBadge isDark={true} />
