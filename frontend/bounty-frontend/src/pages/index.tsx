@@ -1,4 +1,4 @@
-import {  MeshBadge } from "@meshsdk/react";
+import { CardanoWallet, MeshBadge } from "@meshsdk/react";
 import { useWallet } from "@meshsdk/react";
 import React, { useEffect, useState } from "react";
 import {
@@ -9,10 +9,6 @@ import {
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import BountyTable from "@/components/BountyTable";
 import ProfileModal from "@/components/Profile";
-
-
-
-
 
 export default function Home() {
   const navigation = [
@@ -29,17 +25,17 @@ export default function Home() {
   const [userBalance, setUserBalance] = useState("");
   const [showProfile, setShowProfile] = useState(false);
 
-  useEffect(() => {
-    const getWalletBalance = async () => {
-      const balance = await wallet.getLovelace();
-      setUserBalance(balance);
-    };
-    if (connected) {
-      getWalletBalance();
-    } else {
-      connect("eternl");
-    }
-  }, [connect, connected, wallet]);
+  // useEffect(() => {
+  //   const getWalletBalance = async () => {
+  //     const balance = await wallet.getLovelace();
+  //     setUserBalance(balance);
+  //   };
+  //   if (connected) {
+  //     getWalletBalance();
+  //   } else {
+  //     connect("eternl");
+  //   }
+  // }, [connect, connected, wallet]);
 
   const handleProfileClick = () => {
     setShowProfile(true); // Show the profile modal when clicked
@@ -100,7 +96,7 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center space-x-6 justify-end ml-auto">
-                  {connected ? (
+                  {/* {connected ? (
                     <button
                       type="button"
                       className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-md px-5 py-2.5 me-2 mb-2 transition duration-200 ease-in-out"
@@ -117,7 +113,8 @@ export default function Home() {
                     >
                       Connect Wallet
                     </button>
-                  )}
+                  )} */}
+                  <CardanoWallet isDark={false} />
                 </div>
               </div>
             </div>

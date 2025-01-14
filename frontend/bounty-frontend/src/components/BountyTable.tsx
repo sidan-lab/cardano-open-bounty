@@ -15,7 +15,7 @@ const BountyTable: React.FC = () => {
   const [bounties, setBounties] = useState<Bounty[]>([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasIDToken, setHasIDToken] = useState(false);
+  // const [hasIDToken, setHasIDToken] = useState(false);
 
   const handleCreateBounty = (newBounty: Bounty) => {
     setBounties((prevState) => [...prevState, newBounty]);
@@ -40,7 +40,7 @@ const BountyTable: React.FC = () => {
         <h2 className="text-2xl font-bold">Bounty Board</h2>
         <div className="flex space-x-2">
           <CreateIDToken />
-          {connected && hasIDToken &&(
+          {connected  &&(
             <CreateBountyToken onCreateBounty={handleCreateBounty} />
           )}
         </div>
