@@ -6,15 +6,16 @@ import {
   MeshTxBuilder,
   resolveScriptHash,
   stringToHex,
-  deserializeAddress,
   applyCborEncoding,
   serializePlutusScript,
   mTuple,
-  // MaestroProvider,
+  CIP68_100,
+  CIP68_222,
+  deserializeAddress,
 } from "@meshsdk/core";
 import { getUtxoApiRoute, updateUtxoApiRoute } from "./api_common";
 
-export const spendOracleNFT = async (wallet: IWallet) => {
+export const mintIdToken = async (wallet: IWallet) => {
   if (!wallet) {
     alert("Please connect your wallet");
     return;
@@ -26,15 +27,9 @@ export const spendOracleNFT = async (wallet: IWallet) => {
 
   // Set up tx builder with blockfrost support
   const blockfrost: BlockfrostProvider = new BlockfrostProvider(
-    "preprodV7dWeNmimVypuKDgsDCkEuRhKxsonOxk"
+    process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY,
+    0
   );
-
-  // const blockchainProvider = new MaestroProvider({
-  //   network: "Preprod", // Mainnet / Preprod / Preview
-  //   apiKey: "4a3JlXtGo8ASQg8lYP9h0X1X3qX3GjMD", // Get key at https://docs.gomaestro.org/
-  //   turboSubmit: false, // Read about paid turbo transaction submission feature at https://docs.gomaestro.org
-  // });
-
   const txBuilder: MeshTxBuilder = new MeshTxBuilder({
     fetcher: blockfrost,
     submitter: blockfrost,
@@ -47,13 +42,13 @@ export const spendOracleNFT = async (wallet: IWallet) => {
   const usedAddress = (await wallet.getUsedAddresses())[0];
   const { pubKeyHash, stakeCredentialHash } = deserializeAddress(usedAddress);
 
-  const OracleNFTSpendingScriptCbor = applyCborEncoding(
-    blueprint.validators[16]!.compiledCode
+  const idOracleCounterSpendingScriptCbor = applyCborEncoding(
+    blueprint.validators[12]!.compiledCode
   );
 
-  const OracleNFTAddress = serializePlutusScript(
+  const idOracleCounterAddress = serializePlutusScript(
     {
-      code: OracleNFTSpendingScriptCbor,
+      code: idOracleCounterSpendingScriptCbor,
       version: "V3",
     },
     undefined,
@@ -84,76 +79,22 @@ export const spendOracleNFT = async (wallet: IWallet) => {
     "Mesh"
   );
 
-  const bountyBoardScriptCbor = applyParamsToScript(
-    blueprint.validators[1]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
-
-  const bountyMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[3]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
+  const idSpendingScriptAddress = serializePlutusScript(
+    {
+      code: idSpendingScriptCbor,
+      version: "V3",
+    },
+    undefined,
+    0
+  ).address;
 
   const idMintingPolicyId = resolveScriptHash(idMintingScriptCbor, "V3");
-  const bountyMintingPolicyId = resolveScriptHash(
-    bountyMintingScriptCbor,
-    "V3"
-  );
 
   const oracleDatum = JSON.stringify({
     constructor: 0,
     fields: [
       {
-        bytes: idMintingPolicyId,
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 1,
-            fields: [
-              {
-                bytes: resolveScriptHash(idSpendingScriptCbor, "V3"),
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-      {
-        bytes: bountyMintingPolicyId,
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 1,
-            fields: [
-              {
-                bytes: resolveScriptHash(bountyBoardScriptCbor, "V3"),
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
+        int: 0,
       },
       {
         constructor: 0,
@@ -180,13 +121,21 @@ export const spendOracleNFT = async (wallet: IWallet) => {
   });
 
   try {
-    const { oracleTxHash, oracleOutputIndex } = await getUtxoApiRoute(
+    const oracleResult = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
     );
 
+    const counterResult = await getUtxoApiRoute(
+      process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_ASSET_NAME!
+    );
+
     const unsignedTx = await txBuilder
+      .readOnlyTxInReference(
+        oracleResult.oracleTxHash,
+        oracleResult.oracleOutputIndex
+      )
       .spendingPlutusScriptV3()
-      .txIn(oracleTxHash, oracleOutputIndex)
+      .txIn(counterResult.oracleTxHash, counterResult.oracleOutputIndex)
       .txInRedeemerValue(
         JSON.stringify({
           constructor: 0,
@@ -194,35 +143,81 @@ export const spendOracleNFT = async (wallet: IWallet) => {
         }),
         "JSON"
       )
-      .txInScript(OracleNFTSpendingScriptCbor)
+      .txInScript(idOracleCounterSpendingScriptCbor)
       .txInInlineDatumPresent()
-      .txOut(OracleNFTAddress, [
+      .mintPlutusScriptV3()
+      .mint(
+        "1",
+        idMintingPolicyId,
+        CIP68_100(process.env.NEXT_PUBLIC_COLLECTION_NAME!)
+      )
+      .mintingScript(idMintingScriptCbor)
+      .mintRedeemerValue(
+        JSON.stringify({
+          constructor: 0,
+          fields: [],
+        }),
+        "JSON"
+      )
+      .mintPlutusScriptV3()
+      .mint(
+        "1",
+        idMintingPolicyId,
+        CIP68_222(process.env.NEXT_PUBLIC_COLLECTION_NAME!)
+      )
+      .mintingScript(idMintingScriptCbor)
+      .mintRedeemerValue(
+        JSON.stringify({
+          constructor: 0,
+          fields: [],
+        }),
+        "JSON"
+      )
+      .txOut(idOracleCounterAddress, [
         {
           unit:
-            process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID! +
-            stringToHex(`${process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME}`),
+            process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_POLICY_ID! +
+            stringToHex(""),
           quantity: "1",
         },
       ])
       .txOutInlineDatumValue(oracleDatum, "JSON")
+      .txOut(idSpendingScriptAddress, [
+        {
+          unit:
+            idMintingPolicyId +
+            CIP68_100(process.env.NEXT_PUBLIC_COLLECTION_NAME!),
+          quantity: "1",
+        },
+      ])
+      .txOutInlineDatumValue(
+        JSON.stringify({
+          constructor: 0,
+          fields: [
+            {
+              bytes: stringToHex(""),
+            },
+            { list: [] },
+          ],
+        }),
+        "JSON"
+      )
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,
         collateral.output.amount,
         collateral.output.address
       )
-      .requiredSignerHash(pubKeyHash)
       .changeAddress(changeAddress)
       .selectUtxosFrom(utxos.slice(1))
       .complete();
 
     const signedTx = await wallet.signTx(unsignedTx, true);
     const txHash = await wallet.submitTx(signedTx);
-
     console.log(txHash);
 
     await updateUtxoApiRoute(
-      process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!,
+      process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_ASSET_NAME!,
       "0",
       txHash
     );
@@ -230,3 +225,41 @@ export const spendOracleNFT = async (wallet: IWallet) => {
     console.error(e);
   }
 };
+
+// JSON.stringify({
+//   constructor: 0,
+//   fields: [
+//     {
+//       bytes: stringToHex("aaa@github.com"),
+//     },
+//     { list: [
+//       {
+//         constructor: 0,
+//         fields: [
+//           {
+//             "list": [
+//               {
+//                 "bytes": pubKeyHash
+//               }
+//             ]
+//           },
+//           {
+//             "int": 10000
+//           }
+//         ]
+//       }
+//     ] },
+//   ],
+// }),
+// "JSON"
+// Exercise 2: Try to decode this cbor and find the following information:
+// Inputs
+// Outputs
+// Mint
+// transaction_witness_set.vkeywitness
+// transaction_witness_set.native_script
+
+// While this seems like a very simple transaction, there is actually a lot going on.
+// In particular, an asset's identity is separated into two parts, something called a policy id, and the asset's name.
+// Exercise 2a: Could you try and find information on what a policy id is?
+// After which, try to explain concisely what the above nativeScript is doing.
