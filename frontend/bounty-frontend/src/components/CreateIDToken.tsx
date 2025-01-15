@@ -53,16 +53,18 @@ const CreateIDToken: React.FC = () => {
             <h2 className="text-lg font-bold text-gray-300">
               No ID Token Found
             </h2>
-            <p className="text-gray-400">Do you want to mint an ID token?</p>
-            <div className="flex justify-center space-x-36 mt-4">
+            <p className="text-gray-400 mt-2">
+              Do you want to mint an ID token?
+            </p>
+            <div className="flex justify-center space-x-4 mt-4">
               <button
-                className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-5 py-2.5 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700 "
+                className="text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-5 py-2.5 transition duration-200 ease-in-out"
                 onClick={() => setFormVisible(true)}
               >
                 Yes
               </button>
               <button
-                className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-5 py-2.5 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+                className="text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-5 py-2.5 transition duration-200 ease-in-out"
                 onClick={() => setShowMintPrompt(false)}
               >
                 No

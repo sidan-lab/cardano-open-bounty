@@ -37,7 +37,7 @@ const BountyTable: React.FC = () => {
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg mx-auto max-w-full px-4 sm:px-6 lg:px-8 mt-8 w-full text-white dark:bg-gray-900">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Bounty Board</h2>
+        <h2 className="text-4xl font-bold dark:text-white">Bounty Board</h2>
         <div className="flex space-x-2">
           <CreateIDToken />
           {connected && (
@@ -46,7 +46,7 @@ const BountyTable: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 rounded-lg">
         <div className="flex items-center">
           <label className="text-gray-300" htmlFor="rows-per-page">
             Show:
@@ -67,8 +67,8 @@ const BountyTable: React.FC = () => {
         </div>
       </div>
 
-      <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 mt-4">
-        <thead className="text-xs text-gray-300 uppercase bg-gray-800">
+      <table className="w-full text-sm text-center rtl:text-right text-gray-500 dark:text-gray-400 mt-4 rounded-lg">
+        <thead className="text-xs text-gray-300 uppercase bg-gray-800 rounded-lg">
           <tr>
             <th scope="col" className="p-4">
               <div className="flex items-center">

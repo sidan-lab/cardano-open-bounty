@@ -7,40 +7,47 @@ import {
   DisclosurePanel,
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import BountyTable from "@/components/BountyTable";
 
-export default function Home() {
+const Profile: React.FC = () => {
   const basenavigation = [
-    { name: "Home", href: "#", current: true },
+    { name: "Home", href: "./#", current: false },
     { name: "About", href: "./About", current: false },
   ];
+
   function classNames(...classes: unknown[]) {
     return classes.filter(Boolean).join(" ");
   }
-  
+
   const { wallet, connected, connect } = useWallet();
-  
-  const [, setUserBalance] = useState("");
-  
-  
-    const navigation = [
-      ...basenavigation,
-      ...(connected
-        ? [{ name: "Profile", href: "./Profile", current: false }]
-        : []), 
-    ];
+
+  const navigation = [
+    ...basenavigation,
+    ...(connected
+      ? [{ name: "Profile", href: "./Profile", current: true }]
+      : []),
+  ];
+  const [userBalance, setUserBalance] = useState("");
+  const [userToken, setUserToken] = useState<string | null>(null); // State to store ID token
+  const [userContributions, setUserContributions] = useState<number>(0); // State to store contributions
+  const [userGithubUrl, setUserGithubUrl] = useState<string | null>(null); // State to store GitHub URL
+
   useEffect(() => {
     const getWalletBalance = async () => {
       const balance = await wallet.getLovelace();
       setUserBalance(balance);
+
+      // Simulate fetching user token and contributions
+      setUserToken("ExampleIDToken");
+      setUserContributions(3);
+      setUserGithubUrl("https://github.com/exampleUser");
     };
+
     if (connected) {
       getWalletBalance();
     } else {
       connect("eternl");
     }
   }, [connect, connected, wallet]);
-
 
   return (
     <div className="bg-gray-900 w-full text-white text-center">
@@ -79,7 +86,7 @@ export default function Home() {
                         {item.name}
                       </a>
                     ))}
-                   
+
                     <button className="text-white bg-gray-800 hover:bg-gray-700 rounded-lg text-lg px-4 py-2">
                       Admin
                     </button>
@@ -114,9 +121,25 @@ export default function Home() {
           </DisclosurePanel>
         </Disclosure>
 
-       
-        <div className="flex-grow">
-          <BountyTable />
+        <h1 className="text-3xl font-bold mt-8 ">Profile Information</h1>
+
+        <div className="mt-4">
+          {userToken && (
+            <div className="flex justify-between mb-4">
+              <span className="font-bold">ID token:</span>
+              <span className="font-medium">{userToken}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between mb-4">
+            <span className="font-bold">Contributions:</span>
+            <span className="font-medium">{userContributions}</span>
+          </div>
+
+          <div className="flex justify-between mb-4">
+            <span className="font-bold">GitHub URL:</span>
+            <span className="font-medium">{userGithubUrl || "None"}</span>
+          </div>
         </div>
       </main>
 
@@ -169,4 +192,6 @@ export default function Home() {
       </footer>
     </div>
   );
-}
+};
+
+export default Profile;

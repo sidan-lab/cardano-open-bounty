@@ -7,28 +7,28 @@ import {
   DisclosurePanel,
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import BountyTable from "@/components/BountyTable";
 
-export default function Home() {
-  const basenavigation = [
-    { name: "Home", href: "#", current: true },
-    { name: "About", href: "./About", current: false },
-  ];
+const About: React.FC = () => {
+const basenavigation = [
+  { name: "Home", href: "#", current: false },
+  { name: "About", href: "./About", current: true },
+];
+
   function classNames(...classes: unknown[]) {
     return classes.filter(Boolean).join(" ");
   }
-  
+
   const { wallet, connected, connect } = useWallet();
-  
+
+  const navigation = [
+    ...basenavigation,
+    ...(connected
+      ? [{ name: "Profile", href: "./Profile", current: false }]
+      : []),
+  ];
+
   const [, setUserBalance] = useState("");
-  
-  
-    const navigation = [
-      ...basenavigation,
-      ...(connected
-        ? [{ name: "Profile", href: "./Profile", current: false }]
-        : []), 
-    ];
+
   useEffect(() => {
     const getWalletBalance = async () => {
       const balance = await wallet.getLovelace();
@@ -79,7 +79,7 @@ export default function Home() {
                         {item.name}
                       </a>
                     ))}
-                   
+
                     <button className="text-white bg-gray-800 hover:bg-gray-700 rounded-lg text-lg px-4 py-2">
                       Admin
                     </button>
@@ -114,10 +114,7 @@ export default function Home() {
           </DisclosurePanel>
         </Disclosure>
 
-       
-        <div className="flex-grow">
-          <BountyTable />
-        </div>
+        <h1 className="text-3xl font-bold mt-8">About us</h1>
       </main>
 
       <footer className="bg-gray-900 text-gray-300 rounded-lg shadow m-4 dark:bg-gray-900">
@@ -169,4 +166,6 @@ export default function Home() {
       </footer>
     </div>
   );
-}
+};
+
+export default About;
