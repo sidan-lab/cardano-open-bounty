@@ -31,6 +31,21 @@ const Profile: React.FC = () => {
   const [userContributions, setUserContributions] = useState<number>(0); // State to store contributions
   const [userGithubUrl, setUserGithubUrl] = useState<string | null>(null); // State to store GitHub URL
 
+ const userBountyTokensCreated = [
+   { id: 1, title: "Bounty Token 1", status: "Active" },
+   { id: 2, title: "Bounty Token 2", status: "Completed" },
+   { id: 3, title: "Bounty Token 3", status: "Pending" },
+   { id: 4, title: "Bounty Token 4", status: "Active" },
+   { id: 5, title: "Bounty Token 5", status: "Completed" },
+   { id: 6, title: "Bounty Token 6", status: "Active" },
+ ];
+
+ const userBountyTokensContributed = [
+   { id: 7, title: "Contributed Bounty Token 1", amount: 50 },
+   { id: 8, title: "Contributed Bounty Token 2", amount: 25 },
+   { id: 9, title: "Contributed Bounty Token 3", amount: 100 },
+   { id: 10, title: "Contributed Bounty Token 4", amount: 75 },
+ ];
   useEffect(() => {
     const getWalletBalance = async () => {
       const balance = await wallet.getLovelace();
@@ -120,28 +135,69 @@ const Profile: React.FC = () => {
             </div>
           </DisclosurePanel>
         </Disclosure>
+  <div className="bg-gray-900 w-full text-white p-6">
+    <main className="flex flex-col items-center">
+      <h1 className="text-4xl font-extrabold mb-6">Profile Information</h1>
+      <div className="bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-2xl">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold ">User Details</h2>
+          <p className="text-sm text-gray-300 mt-1">ID Token: <span className="font-medium">{userToken || "None"}</span></p>
+          <p className="text-sm text-gray-300">Contributions: <span className="font-medium">{userContributions}</span></p>
+          <p className="text-sm text-gray-300">
+            GitHub URL:{" "}
+            {userGithubUrl ? (
+              <a
+                href={userGithubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                {userGithubUrl}
+              </a>
+            ) : (
+              <span className="font-medium">None</span>
+            )}
+          </p>
+        </div>
 
-        <h1 className="text-3xl font-bold mt-8 ">Profile Information</h1>
-
-        <div className="mt-4">
-          {userToken && (
-            <div className="flex justify-between mb-4">
-              <span className="font-bold">ID token:</span>
-              <span className="font-medium">{userToken}</span>
-            </div>
-          )}
-
-          <div className="flex justify-between mb-4">
-            <span className="font-bold">Contributions:</span>
-            <span className="font-medium">{userContributions}</span>
-          </div>
-
-          <div className="flex justify-between mb-4">
-            <span className="font-bold">GitHub URL:</span>
-            <span className="font-medium">{userGithubUrl || "None"}</span>
+        <div className="bg-gray-700 rounded-lg mb-6">
+          <h2 className="text-2xl font-bold sticky top-0 bg-gray-700 z-10 p-4">Bounty Tokens Created</h2>
+          <div className="h-48 overflow-y-auto p-4">
+            <ul className="space-y-4">
+              {userBountyTokensCreated.map((token) => (
+                <li key={token.id} className="border border-gray-600 p-4 rounded-lg flex justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{token.title}</h3>
+                    <p className="text-sm text-gray-400">Status: {token.status}</p>
+                  </div>
+                  <span className="text-sm text-gray-300">ID: {token.id}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-      </main>
+
+        {/* Bounty Tokens Contributed */}
+        <div className="bg-gray-700 rounded-lg">
+          <h2 className="text-2xl font-bold sticky top-0 bg-gray-700 z-10 p-4">Bounty Tokens Contributed</h2>
+          <div className="h-48 overflow-y-auto p-4">
+            <ul className="space-y-4">
+              {userBountyTokensContributed.map((token) => (
+                <li key={token.id} className="border border-gray-600 p-4 rounded-lg flex justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{token.title}</h3>
+                    <p className="text-sm text-gray-400">Amount: {token.amount}</p>
+                  </div>
+                  <span className="text-sm text-gray-300">ID: {token.id}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</main>
 
       <footer className="bg-gray-900 text-gray-300 rounded-lg shadow m-4 dark:bg-gray-900">
         <div className="w-full max-w-screen-xl mx-auto p-4 md:py-8 text-center">

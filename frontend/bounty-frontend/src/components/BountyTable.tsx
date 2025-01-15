@@ -12,9 +12,89 @@ interface Bounty {
 const BountyTable: React.FC = () => {
   const { connected } = useWallet();
 
-  const [bounties, setBounties] = useState<Bounty[]>([]);
+  const [bounties, setBounties] = useState<Bounty[]>([
+    {
+      name: "Project-A: Fix Bugs",
+      tasks: "https://example.com/task1",
+      reward: "50 ADA",
+    },
+    {
+      name: "Project-A: Develop Feature X",
+      tasks: "https://example.com/task2",
+      reward: "75 ADA",
+    },
+    {
+      name: "Project-A: Update Documentation",
+      tasks: "https://example.com/task3",
+      reward: "20 ADA",
+    },
+    {
+      name: "Project-B: Conduct Security Audit",
+      tasks: "https://example.com/task4",
+      reward: "100 ADA",
+    },
+    {
+      name: "Project-C: Design UI Mockup",
+      tasks: "https://example.com/task5",
+      reward: "30 ADA",
+    },
+    {
+      name: "Project-D: Create Marketing Plan",
+      tasks: "https://example.com/task6",
+      reward: "60 ADA",
+    },
+    {
+      name: "Project-D: Analyze User Feedback",
+      tasks: "https://example.com/task7",
+      reward: "40 ADA",
+    },
+    {
+      name: "Project-E: Optimize Performance",
+      tasks: "https://example.com/task8",
+      reward: "80 ADA",
+    },
+    {
+      name: "Project-F: Setup Continuous Integration",
+      tasks: "https://example.com/task9",
+      reward: "70 ADA",
+    },
+    {
+      name: "Project-G: Develop API Endpoints",
+      tasks: "https://example.com/task10",
+      reward: "90 ADA",
+    },
+    {
+      name: "Project-H: Migrate Database",
+      tasks: "https://example.com/task11",
+      reward: "110 ADA",
+    },
+    {
+      name: "Project-I: Create User Stories",
+      tasks: "https://example.com/task12",
+      reward: "55 ADA",
+    },
+    {
+      name: "Project-J: Write Unit Tests",
+      tasks: "https://example.com/task13",
+      reward: "65 ADA",
+    },
+    {
+      name: "Project-K: Conduct Market Research",
+      tasks: "https://example.com/task14",
+      reward: "95 ADA",
+    },
+    {
+      name: "Project-L: Implement Security Measures",
+      tasks: "https://example.com/task15",
+      reward: "125 ADA",
+    },
+  ]);
+
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+
+
+
   // const [hasIDToken, setHasIDToken] = useState(false);
 
   const handleCreateBounty = (newBounty: Bounty) => {
@@ -70,18 +150,6 @@ const BountyTable: React.FC = () => {
       <table className="w-full text-sm text-center rtl:text-right text-gray-500 dark:text-gray-400 mt-4 rounded-lg">
         <thead className="text-xs text-gray-300 uppercase bg-gray-800 rounded-lg">
           <tr>
-            <th scope="col" className="p-4">
-              <div className="flex items-center">
-                <input
-                  id="checkbox-all-search"
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <label htmlFor="checkbox-all-search" className="sr-only">
-                  checkbox
-                </label>
-              </div>
-            </th>
             <th scope="col" className="px-6 py-3 text-white">
               Creator
             </th>
@@ -109,29 +177,31 @@ const BountyTable: React.FC = () => {
                 key={index}
                 className="bg-gray-900 border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600"
               >
-                <td className="w-4 p-4">
-                  <div className="flex items-center">
-                    <input
-                      id={`checkbox-table-search-${index}`}
-                      type="checkbox"
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <label
-                      htmlFor={`checkbox-table-search-${index}`}
-                      className="sr-only"
-                    >
-                      checkbox
-                    </label>
-                  </div>
-                </td>
                 <th
                   scope="row"
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap text-white"
                 >
                   {bounty.name}
                 </th>
-                <td className="px-6 py-4 text-white">{bounty.tasks}</td>
+                <td className="px-6 py-4 text-white">
+                  <a
+                    href={bounty.tasks}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    {bounty.tasks}
+                  </a>
+                </td>
                 <td className="px-6 py-4 text-white">{bounty.reward}</td>
+                <td className="px-6 py-4">
+                  <button
+                    className="bg-green-500 text-white rounded px-4 py-2 hover:bg-green-600 transition"
+                    onClick={() => alert(`Contributing to ${bounty.name}`)} // Replace with your contribution logic
+                  >
+                    Contribute
+                  </button>
+                </td>
               </tr>
             ))
           )}

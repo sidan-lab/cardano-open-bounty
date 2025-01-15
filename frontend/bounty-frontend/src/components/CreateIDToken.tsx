@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
+import { mintIdToken } from "@/pages/transactions/id_token_mint";
 
 const CreateIDToken: React.FC = () => {
   const { wallet, connected } = useWallet();
   const [formVisible, setFormVisible] = useState(false);
-  const [idTokenName, setIdTokenName] = useState("");
+  const [github, setGithub] = useState(""); // Store GitHub URL
   const [showMintPrompt, setShowMintPrompt] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [hasIDToken, setHasIDToken] = useState(false);
 
   useEffect(() => {
@@ -28,9 +28,13 @@ const CreateIDToken: React.FC = () => {
     e.preventDefault();
 
     try {
-      console.log("Minting ID Token: ", idTokenName);
-      setIdTokenName("");
-      setFormVisible(false);
+      
+      await console.log("Minted ID Token with GitHub URL:", github);
+      
+
+
+      setGithub(""); 
+      setFormVisible(false); 
     } catch (error) {
       console.error("Error minting ID token:", error);
     }
@@ -96,7 +100,7 @@ const CreateIDToken: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
+                    d="M6  18L18 6M6 6l12 12"
                   />
                 </svg>
               </button>
@@ -104,10 +108,10 @@ const CreateIDToken: React.FC = () => {
             <form onSubmit={handleMintIDToken}>
               <div className="mb-4">
                 <label
-                  htmlFor="username"
+                  htmlFor="github"
                   className="block mb-2 text-sm font-medium text-gray-300"
                 >
-                  Github Account
+                  GitHub Account
                 </label>
                 <div className="flex">
                   <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-l-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600">
@@ -122,7 +126,9 @@ const CreateIDToken: React.FC = () => {
                   </span>
                   <input
                     type="text"
-                    id="username"
+                    id="github"
+                    value={github} 
+                    onChange={(e) => setGithub(e.target.value)} 
                     className="rounded-none rounded-r-lg bg-gray-700 border border-gray-600 text-gray-300 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400"
                     placeholder="Enter your GitHub URL..."
                     required

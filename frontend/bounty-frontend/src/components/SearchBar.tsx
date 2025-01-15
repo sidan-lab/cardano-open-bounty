@@ -2,7 +2,6 @@ import React from "react";
 
 const SearchBar: React.FC = () => {
   return (
-    
     <form className="max-w-lg mx-auto mb-4 ">
       <div className="flex">
         <label

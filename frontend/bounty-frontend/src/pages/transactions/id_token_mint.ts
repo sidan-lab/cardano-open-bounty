@@ -15,7 +15,7 @@ import {
 } from "@meshsdk/core";
 import { getUtxoApiRoute, updateUtxoApiRoute } from "./api_common";
 
-export const mintIdToken = async (wallet: IWallet) => {
+export const mintIdToken = async (github: string, wallet: IWallet) => {
   if (!wallet) {
     alert("Please connect your wallet");
     return;
@@ -195,7 +195,7 @@ export const mintIdToken = async (wallet: IWallet) => {
           constructor: 0,
           fields: [
             {
-              bytes: stringToHex(""),
+              bytes: stringToHex(github),
             },
             { list: [] },
           ],

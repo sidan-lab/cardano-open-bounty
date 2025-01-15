@@ -22,6 +22,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
     tasks: "",
     reward: "",
   });
+  const [, setIsLoading] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -35,14 +36,16 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true); 
 
     async function performTransaction(): Promise<boolean> {
-      // Logic to perform the transaction
-      const success = true; // Assume you determine this based on some conditions
-
-      return success; // Returns true if successful, false otherwise
+      const success = true; 
+      return success;
     }
+
     const transactionSuccessful = await performTransaction();
+    setIsLoading(false);
+
     if (transactionSuccessful) {
       onCreateBounty(newBounty);
       setNewBounty({
@@ -50,15 +53,15 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
         tasks: "",
         reward: "",
       });
-      setFormVisible(false);
+     
     } else {
-      // Handle the case where the transaction fails
       console.error("Transaction failed");
-      // You might want to show an error message to the user here
     }
   };
 
   const { wallet } = useWallet();
+  
+
   return (
     <div>
       <button
