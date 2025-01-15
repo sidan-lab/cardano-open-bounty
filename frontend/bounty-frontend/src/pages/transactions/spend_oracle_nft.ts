@@ -26,7 +26,7 @@ export const spendOracleNFT = async (wallet: IWallet) => {
 
   // Set up tx builder with blockfrost support
   const blockfrost: BlockfrostProvider = new BlockfrostProvider(
-    "preprodV7dWeNmimVypuKDgsDCkEuRhKxsonOxk"
+    process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY
   );
 
   // const blockchainProvider = new MaestroProvider({
