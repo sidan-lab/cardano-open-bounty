@@ -8,7 +8,9 @@ import {
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import BountyTable from "@/components/BountyTable";
-
+import { mintOracleNFT } from "./transactions/mint_oracle_nft";
+import { mintOracleCounter } from "./transactions/mint_oracle_counter";
+import { spendOracleNFT } from "./transactions/spend_oracle_nft";
 export default function Home() {
   const basenavigation = [
     { name: "Home", href: "#", current: true },
@@ -17,18 +19,17 @@ export default function Home() {
   function classNames(...classes: unknown[]) {
     return classes.filter(Boolean).join(" ");
   }
-  
+
   const { wallet, connected, connect } = useWallet();
-  
+
   const [, setUserBalance] = useState("");
-  
-  
-    const navigation = [
-      ...basenavigation,
-      ...(connected
-        ? [{ name: "Profile", href: "./Profile", current: false }]
-        : []), 
-    ];
+
+  const navigation = [
+    ...basenavigation,
+    ...(connected
+      ? [{ name: "Profile", href: "./Profile", current: false }]
+      : []),
+  ];
   useEffect(() => {
     const getWalletBalance = async () => {
       const balance = await wallet.getLovelace();
@@ -40,7 +41,6 @@ export default function Home() {
       connect("eternl");
     }
   }, [connect, connected, wallet]);
-
 
   return (
     <div className="bg-gray-900 w-full text-white text-center">
@@ -79,9 +79,44 @@ export default function Home() {
                         {item.name}
                       </a>
                     ))}
-                   
-                    <button className="text-white bg-gray-800 hover:bg-gray-700 rounded-lg text-lg px-4 py-2">
-                      Admin
+                    <button
+                      type="button"
+                      className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-md px-5 py-2.5 me-2 mb-2 transition duration-200 ease-in-out"
+                      onClick={() => {
+                        if (!wallet) {
+                          alert("Please connect wallet");
+                          return;
+                        }
+                        mintOracleNFT(wallet);
+                      }}
+                    >
+                      Oracle
+                    </button>
+                    <button
+                      type="button"
+                      className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-md px-5 py-2.5 me-2 mb-2 transition duration-200 ease-in-out"
+                      onClick={() => {
+                        if (!wallet) {
+                          alert("Please connect wallet");
+                          return;
+                        }
+                        mintOracleCounter(wallet);
+                      }}
+                    >
+                      Counter
+                    </button>
+                    <button
+                      type="button"
+                      className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-md px-5 py-2.5 me-2 mb-2 transition duration-200 ease-in-out"
+                      onClick={() => {
+                        if (!wallet) {
+                          alert("Please connect wallet");
+                          return;
+                        }
+                        spendOracleNFT(wallet);
+                      }}
+                    >
+                      Update
                     </button>
                   </div>
                 </div>
@@ -114,7 +149,6 @@ export default function Home() {
           </DisclosurePanel>
         </Disclosure>
 
-       
         <div className="flex-grow">
           <BountyTable />
         </div>

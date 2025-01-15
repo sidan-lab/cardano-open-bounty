@@ -1,15 +1,14 @@
 use aiken/collection/dict
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash}
 use aiken/primitive/bytearray.{starts_with}
 use bounty_token_type.{
-  BountyDatum, BountyRedeemer, CheckBurn, CheckMint, to_bounty_datum,
+  Action, BountyDatum, CheckBurn, CheckMint, to_bounty_datum,
 }
 use bounty_token_util.{has_all_signers}
 use cardano/address.{from_script}
 use cardano/assets.{
   AssetName, PolicyId, flatten, from_asset, from_lovelace, lovelace_of, merge,
-  without_lovelace,
+  quantity_of, without_lovelace,
 }
 use cardano/transaction.{InlineDatum, Input, Transaction} as tx
 use cip.{cip68_100, cip68_100_prefix, cip68_222, cip68_222_prefix}
@@ -25,7 +24,7 @@ use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
 validator bounty_token(oracle_token: (PolicyId, AssetName)) {
-  mint(redeemer: BountyRedeemer, policy_id: PolicyId, transaction: Transaction) {
+  mint(redeemer: Action, policy_id: PolicyId, transaction: Transaction) {
     // destructure the transaction
     let Transaction {
       inputs,
@@ -36,7 +35,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
       ..
     } = transaction
 
-    expect [Pair(asset_name, amount)] =
+    expect [Pair(_, amount)] =
       mint
         |> assets.tokens(policy_id)
         |> dict.to_pairs()
@@ -46,7 +45,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
 
     //check redeemer
     let redeemer_check =
-      when redeemer.action is {
+      when redeemer is {
         CheckMint -> {
           expect Some(_bounty_nft_output) =
             outputs
@@ -59,7 +58,9 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
                     let datum_check =
                       (lovelace_of(output.value) >= datum.reward)?
 
-                    address_check && datum_check
+                    let bounty_token_check =
+                      ( output.value |> quantity_of(policy_id, "") ) == 1
+                    address_check && datum_check && bounty_token_check
                   },
                 )
 
@@ -123,7 +124,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
             [input0, input1]
               |> list.filter(
                   fn(input) {
-                    expect [(policy, asset_name, 1)] =
+                    expect [(_, asset_name, 1)] =
                       input.output.value |> without_lovelace() |> flatten()
                     asset_name |> starts_with(cip68_100_prefix)
                   },
@@ -133,7 +134,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
             [input0, input1]
               |> list.filter(
                   fn(input) {
-                    expect [(policy, asset_name, 1)] =
+                    expect [(_, asset_name, 1)] =
                       input.output.value |> without_lovelace() |> flatten()
 
                     asset_name |> starts_with(cip68_222_prefix)
@@ -167,7 +168,6 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
 
           let update_check =
             updated_ref_token_datum == ContributerDatum {
-              index: input_contributer_datum.index,
               github: input_contributer_datum.github,
               contributions: input_contributer_datum.contributions
                 |> list.push(
@@ -236,7 +236,7 @@ fn successful_mint_tx() -> Transaction {
           from_script("bounty_board_hold"),
           merge(
             from_lovelace(100000000000),
-            from_asset(mock_policy_id(0), "abc", 1),
+            from_asset(mock_policy_id(0), "", 1),
           ),
           InlineDatum(
             BountyDatum {
@@ -264,7 +264,7 @@ fn successful_burn_tx() -> Transaction {
       )
     |> tx_in_inline_datum(
         True,
-        ContributerDatum { index: 0, github: @"abc", contributions: [] },
+        ContributerDatum { github: @"abc", contributions: [] },
       )
     |> tx_in(
         True,
@@ -321,7 +321,6 @@ fn successful_burn_tx() -> Transaction {
           ),
           InlineDatum(
             ContributerDatum {
-              index: 0,
               github: @"abc",
               contributions: [
                 Contribution {
@@ -336,7 +335,7 @@ fn successful_burn_tx() -> Transaction {
 }
 
 test successful_mint_bounty_token() {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
 
   let tx: Transaction = successful_mint_tx()
   bounty_token.mint(
@@ -348,7 +347,7 @@ test successful_mint_bounty_token() {
 }
 
 test missing_id_token_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), inputs: [] },
@@ -374,7 +373,7 @@ test missing_id_token_check() fail {
 }
 
 test invalid_id_tkn() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
@@ -420,7 +419,7 @@ test invalid_id_tkn() fail {
 }
 
 test no_lovelace() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
@@ -459,7 +458,7 @@ test no_lovelace() fail {
 }
 
 test lesser_lovelace() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), inputs: [], outputs: [] },
@@ -501,7 +500,7 @@ test lesser_lovelace() fail {
 }
 
 test invalid_address() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckMint }
+  let bounty_redeemer = CheckMint
   let tx: Transaction =
     MocktailTx {
       tx: Transaction { ..successful_mint_tx(), outputs: [] },
@@ -536,7 +535,7 @@ test invalid_address() fail {
 }
 
 test successful_burn_bounty_token() {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction = successful_burn_tx()
 
@@ -549,7 +548,7 @@ test successful_burn_bounty_token() {
 }
 
 test missing_ref_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -567,7 +566,7 @@ test missing_ref_token_burn_check() fail {
         )
       |> tx_in_inline_datum(
           True,
-          ContributerDatum { index: 0, github: @"abc", contributions: [] },
+          ContributerDatum { github: @"abc", contributions: [] },
         )
       |> complete()
 
@@ -580,7 +579,7 @@ test missing_ref_token_burn_check() fail {
 }
 
 test missing_id_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -607,7 +606,7 @@ test missing_id_token_burn_check() fail {
 }
 
 test missing_bounty_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -634,7 +633,7 @@ test missing_bounty_token_burn_check() fail {
 }
 
 test invalid_id_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -664,7 +663,7 @@ test invalid_id_token_burn_check() fail {
 }
 
 test invalid_ref_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -694,7 +693,7 @@ test invalid_ref_token_burn_check() fail {
 }
 
 test invalid_bounty_token_burn_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -721,7 +720,7 @@ test invalid_bounty_token_burn_check() fail {
 }
 
 test invalid_signatory_check() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -741,7 +740,6 @@ test invalid_signatory_check() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                index: 0,
                 github: @"abc",
                 contributions: [
                   Contribution {
@@ -766,7 +764,7 @@ test invalid_signatory_check() fail {
 }
 
 test missing_signatories() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -805,53 +803,8 @@ test missing_signatories() fail {
   )
 }
 
-test invalid_index() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
-
-  let tx: Transaction =
-    MocktailTx {
-      tx: Transaction { ..successful_burn_tx(), outputs: [] },
-      queue_input: None,
-      queue_output: None,
-      queue_ref_input: None,
-    }
-      |> complete()
-      |> add_output(
-          True,
-          mock_script_output(
-            from_script("ref_token_hold"),
-            merge(
-              from_lovelace(100000000000),
-              from_asset(mock_policy_id(0), cip.cip68_100("id"), 1),
-            ),
-            InlineDatum(
-              ContributerDatum {
-                index: 2,
-                github: @"abc",
-                contributions: [
-                  Contribution {
-                    all_signatories: [
-                      mock_pub_key_hash(0),
-                      mock_pub_key_hash(1),
-                    ],
-                    reward: 100000000000,
-                  },
-                ],
-              },
-            ),
-          ),
-        )
-
-  bounty_token.mint(
-    (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
-    mock_policy_id(0),
-    tx,
-  )
-}
-
 test invalid_github() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -871,7 +824,6 @@ test invalid_github() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                index: 0,
                 github: @"wrong_abc",
                 contributions: [
                   Contribution {
@@ -896,7 +848,7 @@ test invalid_github() fail {
 }
 
 test missing_updated_reward() fail {
-  let bounty_redeemer = BountyRedeemer { action: CheckBurn }
+  let bounty_redeemer = CheckBurn
 
   let tx: Transaction =
     MocktailTx {
@@ -916,7 +868,6 @@ test missing_updated_reward() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                index: 0,
                 github: @"abc",
                 contributions: [
                   Contribution {

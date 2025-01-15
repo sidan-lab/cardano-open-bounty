@@ -7,10 +7,6 @@ pub type Action {
   CheckBurn
 }
 
-pub type BountyRedeemer {
-  action: Action,
-}
-
 pub type BountyDatum {
   issue_url: Data,
   reward: Int,

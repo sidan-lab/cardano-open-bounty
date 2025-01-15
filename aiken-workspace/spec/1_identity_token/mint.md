@@ -6,6 +6,8 @@
 validator identity_token(collection_name: ByteArray, oracle_nft: (PolicyId, AssetName), oracle_counter: PolicyId)
 ```
 
+AssetName: oracle_nft
+
 ## Datum
 
 ```rs
