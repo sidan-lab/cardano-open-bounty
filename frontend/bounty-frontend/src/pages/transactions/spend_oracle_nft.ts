@@ -10,8 +10,9 @@ import {
   applyCborEncoding,
   serializePlutusScript,
   mTuple,
+  // MaestroProvider,
 } from "@meshsdk/core";
-import axios from "axios";
+import { getUtxoApiRoute, updateUtxoApiRoute } from "./api_common";
 
 export const spendOracleNFT = async (wallet: IWallet) => {
   if (!wallet) {
@@ -25,9 +26,15 @@ export const spendOracleNFT = async (wallet: IWallet) => {
 
   // Set up tx builder with blockfrost support
   const blockfrost: BlockfrostProvider = new BlockfrostProvider(
-    process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY,
-    0
+    "preprodV7dWeNmimVypuKDgsDCkEuRhKxsonOxk"
   );
+
+  // const blockchainProvider = new MaestroProvider({
+  //   network: "Preprod", // Mainnet / Preprod / Preview
+  //   apiKey: "4a3JlXtGo8ASQg8lYP9h0X1X3qX3GjMD", // Get key at https://docs.gomaestro.org/
+  //   turboSubmit: false, // Read about paid turbo transaction submission feature at https://docs.gomaestro.org
+  // });
+
   const txBuilder: MeshTxBuilder = new MeshTxBuilder({
     fetcher: blockfrost,
     submitter: blockfrost,
@@ -57,15 +64,6 @@ export const spendOracleNFT = async (wallet: IWallet) => {
     blueprint.validators[7]!.compiledCode
   );
 
-  const idSpendingScriptAddress = serializePlutusScript(
-    {
-      code: idSpendingScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
-
   const idMintingScriptCbor = applyParamsToScript(
     blueprint.validators[5]!.compiledCode,
     [
@@ -79,7 +77,7 @@ export const spendOracleNFT = async (wallet: IWallet) => {
     "Mesh"
   );
 
-  const bountyBoradScriptCbor = applyParamsToScript(
+  const bountyBoardScriptCbor = applyParamsToScript(
     blueprint.validators[1]!.compiledCode,
     [
       mTuple(
@@ -89,15 +87,6 @@ export const spendOracleNFT = async (wallet: IWallet) => {
     ],
     "Mesh"
   );
-
-  const bountyBoardScriptAddress = serializePlutusScript(
-    {
-      code: bountyBoradScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
 
   const bountyMintingScriptCbor = applyParamsToScript(
     blueprint.validators[3]!.compiledCode,
@@ -129,7 +118,7 @@ export const spendOracleNFT = async (wallet: IWallet) => {
             constructor: 1,
             fields: [
               {
-                bytes: idSpendingScriptAddress,
+                bytes: resolveScriptHash(idSpendingScriptCbor, "V3"),
               },
             ],
           },
@@ -149,7 +138,7 @@ export const spendOracleNFT = async (wallet: IWallet) => {
             constructor: 1,
             fields: [
               {
-                bytes: bountyBoardScriptAddress,
+                bytes: resolveScriptHash(bountyBoardScriptCbor, "V3"),
               },
             ],
           },
@@ -184,7 +173,7 @@ export const spendOracleNFT = async (wallet: IWallet) => {
   });
 
   try {
-    const { oracleOutputIndex, oracleTxHash } = await getUtxoApiRoute(
+    const { oracleTxHash, oracleOutputIndex } = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
     );
 
@@ -222,6 +211,7 @@ export const spendOracleNFT = async (wallet: IWallet) => {
 
     const signedTx = await wallet.signTx(unsignedTx, true);
     const txHash = await wallet.submitTx(signedTx);
+
     console.log(txHash);
 
     await updateUtxoApiRoute(
@@ -232,47 +222,4 @@ export const spendOracleNFT = async (wallet: IWallet) => {
   } catch (e) {
     console.error(e);
   }
-};
-
-const updateUtxoApiRoute = async (
-  name: string,
-  updatedOutputIndex: string,
-  updatedTxHash: string
-) => {
-  const config = {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-
-  const res = await axios.post(
-    "../api/post/update_utxo",
-    JSON.stringify({
-      name: name,
-      updatedOutputIndex: updatedOutputIndex,
-      updatedTxHash: updatedTxHash,
-    }),
-    config
-  );
-  console.log("update utxo res", res.data);
-};
-
-const getUtxoApiRoute = async (
-  name: string
-): Promise<{ oracleOutputIndex: number; oracleTxHash: string }> => {
-  const config = {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-
-  const res = await axios.post(
-    "../api/post/get_utxo",
-    JSON.stringify({
-      name: name,
-    }),
-    config
-  );
-  const { oracleOutputIndex, oracleTxHash } = res.data;
-  return { oracleOutputIndex, oracleTxHash };
 };

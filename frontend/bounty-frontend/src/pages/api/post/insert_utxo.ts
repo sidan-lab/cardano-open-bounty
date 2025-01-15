@@ -8,10 +8,11 @@ export default async function handler(
   if (req.method === "POST") {
     try {
       const { name, outputIndex, txHash } = req.body;
+      const id = name == process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME ? 1 : 2;
       const sql = neon(process.env.DATABASE_URL!);
       await sql(
-        "INSERT INTO cardano_open_bounty (name, outputindex, txhash) VALUES ($1, $2, $3);",
-        [name, outputIndex, txHash]
+        "INSERT INTO cardano_open_bounty (id, name, outputindex, txhash) VALUES ($1::int, $2, $3, $4);",
+        [id, name, outputIndex, txHash]
       );
 
       res.status(200).json({ message: "Data inserted successfully" });

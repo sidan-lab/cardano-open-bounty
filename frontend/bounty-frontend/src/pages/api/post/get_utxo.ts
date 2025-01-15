@@ -17,7 +17,9 @@ export default async function handler(
       if (queryResult.length > 0) {
         const { outputindex: oracleOutputIndex, txhash: oracleTxHash } =
           queryResult[0];
-        res.status(200).json({ oracleOutputIndex, oracleTxHash });
+        res
+          .status(200)
+          .json({ oracleOutputIndex: Number(oracleOutputIndex), oracleTxHash });
       } else {
         res.status(404).json({ message: "Data not found" });
       }

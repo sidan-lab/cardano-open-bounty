@@ -12,7 +12,7 @@ import {
   mOutputReference,
   Data,
 } from "@meshsdk/core";
-import axios from "axios";
+import { insertUtxoApiRoute } from "./api_common";
 
 export const mintOracleCounter = async (wallet: IWallet) => {
   if (!wallet) {
@@ -26,8 +26,7 @@ export const mintOracleCounter = async (wallet: IWallet) => {
 
   // Set up tx builder with blockfrost support
   const blockfrost: BlockfrostProvider = new BlockfrostProvider(
-    process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY,
-    0
+    process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY
   );
   const txBuilder: MeshTxBuilder = new MeshTxBuilder({
     fetcher: blockfrost,
@@ -143,33 +142,10 @@ export const mintOracleCounter = async (wallet: IWallet) => {
 
     await insertUtxoApiRoute(
       process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_ASSET_NAME!,
-      paramUtxo.input.outputIndex.toString(),
-      paramUtxo.input.txHash
+      "0",
+      txHash
     );
   } catch (e) {
     console.error(e);
   }
-};
-
-const insertUtxoApiRoute = async (
-  name: string,
-  outputIndex: string,
-  txHash: string
-) => {
-  const config = {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-
-  const res = await axios.post(
-    "../api/post/insert_utxo",
-    JSON.stringify({
-      name: name,
-      outputIndex: outputIndex,
-      txHash: txHash,
-    }),
-    config
-  );
-  console.log("insert utxo res", res.data);
 };

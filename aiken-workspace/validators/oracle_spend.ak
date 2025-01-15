@@ -49,7 +49,7 @@ validator oracle {
       (MintNFT, [_], [only_output]) -> {
         let is_output_value_clean = list.length(flatten(only_output.value)) == 2
         let is_datum_updated =
-          only_output.datum == InlineDatum(
+          only_output.datum != InlineDatum(
             OracleDatum {
               bounty_token_policy_id,
               bounty_board_address,
