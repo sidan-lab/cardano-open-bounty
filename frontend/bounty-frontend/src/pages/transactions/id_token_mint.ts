@@ -251,15 +251,3 @@ export const mintIdToken = async (wallet: IWallet) => {
 //     ] },
 //   ],
 // }),
-// "JSON"
-// Exercise 2: Try to decode this cbor and find the following information:
-// Inputs
-// Outputs
-// Mint
-// transaction_witness_set.vkeywitness
-// transaction_witness_set.native_script
-
-// While this seems like a very simple transaction, there is actually a lot going on.
-// In particular, an asset's identity is separated into two parts, something called a policy id, and the asset's name.
-// Exercise 2a: Could you try and find information on what a policy id is?
-// After which, try to explain concisely what the above nativeScript is doing.
