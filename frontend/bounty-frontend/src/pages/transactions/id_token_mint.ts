@@ -14,6 +14,7 @@ import {
   deserializeAddress,
 } from "@meshsdk/core";
 import { getUtxoApiRoute, updateUtxoApiRoute } from "./api_common";
+import { ApiMiddleware } from "@/middleware/api";
 
 export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
   if (!wallet) {
@@ -90,36 +91,7 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
 
   const idMintingPolicyId = resolveScriptHash(idMintingScriptCbor, "V3");
 
-  const oracleDatum = JSON.stringify({
-    constructor: 0,
-    fields: [
-      {
-        int: 0,
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 0,
-            fields: [
-              {
-                bytes: pubKeyHash,
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [
-              {
-                bytes: stakeCredentialHash,
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  });
-
+  const api = new ApiMiddleware(wallet);
   try {
     const oracleResult = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
@@ -128,6 +100,41 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
     const counterResult = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_ASSET_NAME!
     );
+
+    const { count } = await api.getOracleCounterNum(
+      oracleResult.oracleTxHash,
+      oracleResult.oracleOutputIndex
+    );
+
+    const oracleDatum = JSON.stringify({
+      constructor: 0,
+      fields: [
+        {
+          int: count + 1,
+        },
+        {
+          constructor: 0,
+          fields: [
+            {
+              constructor: 0,
+              fields: [
+                {
+                  bytes: pubKeyHash,
+                },
+              ],
+            },
+            {
+              constructor: 1,
+              fields: [
+                {
+                  bytes: stakeCredentialHash,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
 
     const unsignedTx = await txBuilder
       .readOnlyTxInReference(
@@ -149,7 +156,7 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
       .mint(
         "1",
         idMintingPolicyId,
-        CIP68_100(process.env.NEXT_PUBLIC_COLLECTION_NAME!)
+        CIP68_100(process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString())
       )
       .mintingScript(idMintingScriptCbor)
       .mintRedeemerValue(
@@ -163,7 +170,7 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
       .mint(
         "1",
         idMintingPolicyId,
-        CIP68_222(process.env.NEXT_PUBLIC_COLLECTION_NAME!)
+        CIP68_222(process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString())
       )
       .mintingScript(idMintingScriptCbor)
       .mintRedeemerValue(
@@ -186,7 +193,9 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
         {
           unit:
             idMintingPolicyId +
-            CIP68_100(process.env.NEXT_PUBLIC_COLLECTION_NAME!),
+            CIP68_100(
+              process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString()
+            ),
           quantity: "1",
         },
       ])
