@@ -7,10 +7,11 @@ import {
   DisclosurePanel,
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 const About: React.FC = () => {
 const basenavigation = [
-  { name: "Home", href: "#", current: false },
+  { name: "Home", href: "./#", current: false },
   { name: "About", href: "./About", current: true },
 ];
 
@@ -66,7 +67,7 @@ const basenavigation = [
                 <div className="hidden sm:block">
                   <div className="flex space-x-4">
                     {navigation.map((item) => (
-                      <a
+                      <Link
                         key={item.name}
                         href={item.href}
                         aria-current={item.current ? "page" : undefined}
@@ -77,7 +78,7 @@ const basenavigation = [
                         )}
                       >
                         {item.name}
-                      </a>
+                      </Link>
                     ))}
 
                     <button className="text-white bg-gray-800 hover:bg-gray-700 rounded-lg text-lg px-4 py-2">

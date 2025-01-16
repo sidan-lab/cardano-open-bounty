@@ -11,6 +11,7 @@ import BountyTable from "@/components/BountyTable";
 import { mintOracleNFT } from "./transactions/mint_oracle_nft";
 import { mintOracleCounter } from "./transactions/mint_oracle_counter";
 import { spendOracleNFT } from "./transactions/spend_oracle_nft";
+import Link from "next/link";
 export default function Home() {
   const basenavigation = [
     { name: "Home", href: "#", current: true },
@@ -66,7 +67,7 @@ export default function Home() {
                 <div className="hidden sm:block">
                   <div className="flex space-x-4">
                     {navigation.map((item) => (
-                      <a
+                      <Link
                         key={item.name}
                         href={item.href}
                         aria-current={item.current ? "page" : undefined}
@@ -77,7 +78,7 @@ export default function Home() {
                         )}
                       >
                         {item.name}
-                      </a>
+                      </Link>
                     ))}
                     <button
                       type="button"
