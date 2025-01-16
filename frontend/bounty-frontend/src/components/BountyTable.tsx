@@ -92,8 +92,7 @@ const BountyTable: React.FC = () => {
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-
-
+  const [searchQuery, setSearchQuery] = useState<string>(""); // New state for search query
 
   // const [hasIDToken, setHasIDToken] = useState(false);
 
@@ -108,12 +107,23 @@ const BountyTable: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const totalPages = Math.ceil(bounties.length / rowsPerPage);
-  const displayedBounties = bounties.slice(
+  // Filter bounties based on the search query
+  const filteredBounties = bounties.filter(
+    (bounty) =>
+      bounty.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bounty.tasks.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredBounties.length / rowsPerPage);
+  const displayedBounties = filteredBounties.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to the first page on search
+  };
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg mx-auto max-w-full px-4 sm:px-6 lg:px-8 mt-8 w-full text-white dark:bg-gray-900">
       <div className="flex justify-between items-center mb-6">
@@ -143,7 +153,7 @@ const BountyTable: React.FC = () => {
           </select>
         </div>
         <div className="w-1/4">
-          <SearchBars />
+          <SearchBars onSearchChange={handleSearchChange} />
         </div>
       </div>
 
@@ -196,9 +206,24 @@ const BountyTable: React.FC = () => {
                 <td className="px-6 py-4 text-white">{bounty.reward}</td>
                 <td className="px-6 py-4">
                   <button
-                    className="bg-green-500 text-white rounded px-4 py-2 hover:bg-green-600 transition"
-                    onClick={() => alert(`Contributing to ${bounty.name}`)} // Replace with your contribution logic
+                    type="button"
+                    className="text-white bg-text-white bg-gray-800 hover:bg-[#050708]/80 focus:ring-4 focus:outline-none focus:ring-[#050708]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:hover:bg-[#050708]/40 dark:focus:ring-gray-600 me-2 mb-2"
                   >
+                    <svg
+                      width="32"
+                      height="32"
+                      clip-rule="evenodd"
+                      fill-rule="evenodd"
+                      stroke-linejoin="round"
+                      stroke-miterlimit="2"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="m21 4.009c0-.478-.379-1-1-1h-16c-.62 0-1 .519-1 1v16c0 .621.52 1 1 1h16c.478 0 1-.379 1-1zm-16.5.5h15v15h-15zm2.449 7.882 3.851 3.43c.142.128.321.19.499.19.202 0 .405-.081.552-.242l5.953-6.509c.131-.143.196-.323.196-.502 0-.41-.331-.747-.748-.747-.204 0-.405.082-.554.243l-5.453 5.962-3.298-2.938c-.144-.127-.321-.19-.499-.19-.415 0-.748.335-.748.746 0 .205.084.409.249.557z"
+                        fill="#FFFFFF"
+                      />
+                    </svg>
                     Contribute
                   </button>
                 </td>

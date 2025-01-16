@@ -27,11 +27,10 @@ const Profile: React.FC = () => {
       ? [{ name: "Profile", href: "./Profile", current: true }]
       : []),
   ];
-  const [userBalance, setUserBalance] = useState("");
-  const [userToken, setUserToken] = useState<string | null>(null); // State to store ID token
-  const [userContributions, setUserContributions] = useState<number>(0); // State to store contributions
-  const [userGithubUrl, setUserGithubUrl] = useState<string | null>(null); // State to store GitHub URL
-
+  const [, setUserBalance] = useState("");
+  const [userToken, setUserToken] = useState<string | null>(null);
+  const [userContributions, setUserContributions] = useState<number>(0); 
+  const [userGithubUrl, setUserGithubUrl] = useState<string | null>(null);
  const userBountyTokensCreated = [
    { id: 1, title: "Bounty Token 1", status: "Active" },
    { id: 2, title: "Bounty Token 2", status: "Completed" },

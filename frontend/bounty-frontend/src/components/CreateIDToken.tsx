@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
-import { mintIdToken } from "@/pages/transactions/id_token_mint";
+// import { mintIdToken } from "@/pages/transactions/id_token_mint";
 
 const CreateIDToken: React.FC = () => {
   const { wallet, connected } = useWallet();
   const [formVisible, setFormVisible] = useState(false);
-  const [github, setGithub] = useState(""); // Store GitHub URL
+  const [github, setGithub] = useState(""); 
   const [showMintPrompt, setShowMintPrompt] = useState(false);
   const [hasIDToken, setHasIDToken] = useState(false);
 
