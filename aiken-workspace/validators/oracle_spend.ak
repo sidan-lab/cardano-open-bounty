@@ -104,9 +104,9 @@ fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
         True,
         OracleDatum {
           bounty_token_policy_id: if is_datum_updated {
-            mock_policy_id(0)
-          } else {
             mock_policy_id(99999)
+          } else {
+            mock_policy_id(0)
           },
           bounty_board_address: from_script("bounty_board_hold"),
           id_token_policy_id: mock_policy_id(1),

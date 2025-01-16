@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
+import { mintIdToken } from "@/pages/transactions/id_token_mint";
+import { ApiMiddleware } from "@/middleware/api";
 // import { mintIdToken } from "@/pages/transactions/id_token_mint";
 
 const CreateIDToken: React.FC = () => {
@@ -9,17 +11,13 @@ const CreateIDToken: React.FC = () => {
   const [showMintPrompt, setShowMintPrompt] = useState(false);
   const [hasIDToken, setHasIDToken] = useState(false);
 
-
+  const api = new ApiMiddleware(wallet);
 
   useEffect(() => {
     const checkIDTokenOwnership = async () => {
-      const tokenOwnership = false;
+      const hasId = await api.findIdtoken();
 
-      if (!tokenOwnership) {
-        setShowMintPrompt(true);
-      } else {
-        setHasIDToken(true);
-      }
+      setHasIDToken(hasId.hasIdToken);
     };
     if (connected) {
       checkIDTokenOwnership();
@@ -30,7 +28,8 @@ const CreateIDToken: React.FC = () => {
     e.preventDefault();
 
     try {
-      await console.log("Minted ID Token with GitHub URL:", github);
+      await mintIdToken(github, wallet);
+      console.log("Minted ID Token with GitHub URL:", github);
 
       setGithub("");
       setFormVisible(false);
@@ -50,7 +49,7 @@ const CreateIDToken: React.FC = () => {
         </button>
       )}
 
-      {showMintPrompt && (
+      {!hasIDToken && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg z-50 w-1/3">
             <h2 className="text-lg font-bold text-gray-300">

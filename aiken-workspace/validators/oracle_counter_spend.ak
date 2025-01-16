@@ -45,7 +45,7 @@ validator oracle_counter {
           only_output.datum == InlineDatum(
             OracleCounterDatum { count: count + 1, owner },
           )
-        is_output_value_clean? && is_count_updated? && is_owner_signed?
+        is_output_value_clean? && is_count_updated?
       }
       (StopOracle, [_], _) -> {
         let is_oracle_nft_burnt =

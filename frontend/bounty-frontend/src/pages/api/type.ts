@@ -18,9 +18,8 @@ export type OracleCounterDatum = ConStr0<[Integer, PubKeyAddress]>;
 
 export type BountyDatum = ConStr0<[Data, Integer, List<PubKeyHash>]>;
 
-export type ContributerDatum = ConStr0<
-  [ByteString, List<ConStr0<[List<PubKeyHash>, Integer]>>]
->;
+export type ContributerDatum = ConStr0<[ByteString, List<ContributionDatum>]>;
+export type ContributionDatum = ConStr0<[List<PubKeyHash>, Integer]>;
 
 export type ActionMint = ConStr0<[]>;
 
