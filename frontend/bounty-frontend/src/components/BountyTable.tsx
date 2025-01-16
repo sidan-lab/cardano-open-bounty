@@ -92,7 +92,7 @@ const BountyTable: React.FC = () => {
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState<string>(""); 
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [hasIDToken, setHasIDToken] = useState(false);
 
   const handleCreateBounty = (newBounty: Bounty) => {
@@ -130,7 +130,7 @@ const BountyTable: React.FC = () => {
         <h2 className="text-4xl font-bold dark:text-white">Bounty Board</h2>
         <div className="flex space-x-2">
           <CreateIDToken />
-          {connected && hasIDToken &&(
+          {connected && hasIDToken && (
             <CreateBountyToken onCreateBounty={handleCreateBounty} />
           )}
         </div>
@@ -185,7 +185,7 @@ const BountyTable: React.FC = () => {
             displayedBounties.map((bounty, index) => (
               <tr
                 key={index}
-                className="bg-gray-900 border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600"
+                className="bg-gray-900 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600"
               >
                 <th
                   scope="row"

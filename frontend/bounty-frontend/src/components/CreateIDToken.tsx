@@ -9,6 +9,8 @@ const CreateIDToken: React.FC = () => {
   const [showMintPrompt, setShowMintPrompt] = useState(false);
   const [hasIDToken, setHasIDToken] = useState(false);
 
+
+
   useEffect(() => {
     const checkIDTokenOwnership = async () => {
       const tokenOwnership = false;
