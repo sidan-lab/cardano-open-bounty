@@ -12,7 +12,7 @@ use identity_token_type.{
 }
 use mocktail.{
   add_output, complete, mint, mock_pub_key_address, mock_tx_hash, mocktail_tx,
-  ref_tx_in, ref_tx_in_inline_datum, tx_in,
+  ref_tx_in, ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
 }
 use mocktail/virgin_key_hash.{mock_policy_id}
 use mocktail/virgin_outputs.{mock_script_output}
@@ -25,13 +25,14 @@ validator identity_token(
   oracle_counter: PolicyId,
 ) {
   mint(redeemer: Action, policy_id: PolicyId, transaction: Transaction) {
-    let Transaction { mint, outputs, reference_inputs, .. } = transaction
+    let Transaction { mint, outputs, reference_inputs, inputs, .. } =
+      transaction
 
     expect oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
 
     expect oracle_counter_datum: OracleCounterDatum =
-      reference_inputs |> get_oracle_counter_datum(oracle_counter)
+      inputs |> get_oracle_counter_datum(oracle_counter)
 
     expect [Pair(asset_name_1, amount_1),
       Pair(asset_name_2, amount_2)] =
@@ -144,14 +145,14 @@ fn mock_mint_tx(
           owner: mock_pub_key_address(0, None),
         },
       )
-    |> ref_tx_in(
+    |> tx_in(
         is_counter_inputed,
         mock_tx_hash(0),
         0,
         from_asset(mock_policy_id(3), "", 1),
         from_script("ref_token_hold"),
       )
-    |> ref_tx_in_inline_datum(
+    |> tx_in_inline_datum(
         is_counter_inputed,
         OracleCounterDatum { count: 10, owner: mock_pub_key_address(0, None) },
       )
@@ -406,14 +407,14 @@ fn mock_burn_tx(
         ),
         from_script("ref_token_hold"),
       )
-    |> ref_tx_in(
+    |> tx_in(
         is_oracle_inputed,
         mock_tx_hash(0),
         0,
         from_asset(mock_policy_id(2), "oracle", 1),
         from_script("ref_token_hold"),
       )
-    |> ref_tx_in_inline_datum(
+    |> tx_in_inline_datum(
         is_oracle_inputed,
         OracleDatum {
           bounty_token_policy_id: mock_policy_id(0),

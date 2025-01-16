@@ -26,11 +26,11 @@ pub fn get_oracle_nft_datum(
 }
 
 pub fn get_oracle_counter_datum(
-  reference_inputs: List<Input>,
+  inputs: List<Input>,
   oracle_counter: PolicyId,
 ) -> OracleCounterDatum {
   expect Some(oracle_input) =
-    reference_inputs
+    inputs
       |> list.find(
           fn(ref_input: Input) {
             quantity_of(ref_input.output.value, oracle_counter, "") == 1
