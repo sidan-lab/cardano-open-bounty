@@ -103,22 +103,19 @@ export class BlockfrostService {
       addressUtxos.forEach((uxto) => {
         if (uxto.inline_datum) {
           const data: BountyDatum = deserializeDatum(uxto.inline_datum);
-          bountyDatum.push(data);
+          const all_signs: string[] = [];
+          data.fields[2].list.forEach((sign) => {
+            all_signs.push(sign.toString());
+          });
+
+          const bounty: Bounty = {
+            name: uxto.amount.find()?.unit.slice(56),
+            issue_url: data.fields[0].toString(),
+            reward: Number(data.fields[1].int),
+            all_signatories: all_signs,
+          };
+          bounties.push(bounty);
         }
-      });
-
-      bountyDatum.forEach((datum) => {
-        const all_signs: string[] = [];
-        datum.fields[2].list.forEach((sign) => {
-          all_signs.push(sign.toString());
-        });
-
-        const bounty: Bounty = {
-          issue_url: datum.fields[0].toString(),
-          reward: Number(datum.fields[1].int),
-          all_signatories: all_signs,
-        };
-        bounties.push(bounty);
       });
 
       return { bounties };

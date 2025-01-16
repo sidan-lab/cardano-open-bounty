@@ -130,8 +130,6 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
       ],
     };
 
-    console.log(oracleResult.oracleTxHash);
-
     const unsignedTx = await txBuilder
       .readOnlyTxInReference(
         oracleResult.oracleTxHash,

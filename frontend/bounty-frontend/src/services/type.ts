@@ -11,6 +11,7 @@ export type Contribution = {
 };
 
 export type Bounty = {
+  name: string;
   issue_url: string;
   reward: number;
   all_signatories: string[];

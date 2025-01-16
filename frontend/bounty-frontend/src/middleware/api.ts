@@ -18,6 +18,25 @@ export class ApiMiddleware {
     }
   };
 
+  getIdTx = async (): Promise<{
+    txHash: string;
+    index: number;
+  }> => {
+    try {
+      const { policyId, assetName } = await this.wallet.getIdToken();
+
+      const { txHash, index } = await this.blockFrost.getIdTokenTxHash(
+        policyId,
+        assetName
+      );
+
+      return { txHash, index };
+    } catch (error) {
+      console.error("Error getting id tx :", error);
+      throw error;
+    }
+  };
+
   getIdInfo = async (): Promise<{
     gitHub: string;
     contributions: Contribution[];
