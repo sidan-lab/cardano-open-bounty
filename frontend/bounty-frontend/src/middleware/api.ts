@@ -7,6 +7,17 @@ export class ApiMiddleware {
   wallet: UserWalletService;
   blockFrost: BlockfrostService;
 
+  findIdtoken = async (): Promise<{ hasIdToken: boolean }> => {
+    try {
+      const hasIdToken = await this.wallet.findIdtoken();
+
+      return hasIdToken;
+    } catch (error) {
+      console.error("Error finding idToken:", error);
+      throw error;
+    }
+  };
+
   getIdInfo = async (): Promise<{
     gitHub: string;
     contributions: Contribution[];

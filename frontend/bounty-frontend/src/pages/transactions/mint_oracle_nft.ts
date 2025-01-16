@@ -38,7 +38,7 @@ export const mintOracleNFT = async (wallet: IWallet) => {
   const utxos = await wallet.getUtxos();
   const collateral = (await wallet.getCollateral())[0];
   const usedAddress = (await wallet.getUsedAddresses())[0];
-  const { pubKeyHash, stakeCredentialHash } = deserializeAddress(usedAddress);
+  const { pubKeyHash } = deserializeAddress(usedAddress);
 
   const paramUtxo = utxos[0]!;
   const param: Data = mOutputReference(
@@ -122,11 +122,7 @@ export const mintOracleNFT = async (wallet: IWallet) => {
           },
           {
             constructor: 1,
-            fields: [
-              {
-                bytes: stakeCredentialHash,
-              },
-            ],
+            fields: [],
           },
         ],
       },

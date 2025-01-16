@@ -33,17 +33,17 @@ export default function Home() {
       ? [{ name: "Profile", href: "./Profile", current: false }]
       : []),
   ];
-  useEffect(() => {
-    const getWalletBalance = async () => {
-      const balance = await wallet.getLovelace();
-      setUserBalance(balance);
-    };
-    if (connected) {
-      getWalletBalance();
-    } else {
-      connect("eternl");
-    }
-  }, [connect, connected, wallet]);
+  // useEffect(() => {
+  //   const getWalletBalance = async () => {
+  //     const balance = await wallet.getLovelace();
+  //     setUserBalance(balance);
+  //   };
+  //   if (connected) {
+  //     getWalletBalance();
+  //   } else {
+  //     connect("eternl");
+  //   }
+  // }, [connect, connected, wallet]);
 
   return (
     <div className="bg-gray-900 w-full text-white text-center">

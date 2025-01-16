@@ -45,7 +45,7 @@ export const spendOracleNFT = async (wallet: IWallet) => {
   const utxos = await wallet.getUtxos();
   const collateral = (await wallet.getCollateral())[0];
   const usedAddress = (await wallet.getUsedAddresses())[0];
-  const { pubKeyHash, stakeCredentialHash } = deserializeAddress(usedAddress);
+  const { pubKeyHash } = deserializeAddress(usedAddress);
 
   const OracleNFTSpendingScriptCbor = applyCborEncoding(
     blueprint.validators[16]!.compiledCode
@@ -116,26 +116,6 @@ export const spendOracleNFT = async (wallet: IWallet) => {
     constructor: 0,
     fields: [
       {
-        bytes: idMintingPolicyId,
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 1,
-            fields: [
-              {
-                bytes: resolveScriptHash(idSpendingScriptCbor, "V3"),
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-      {
         bytes: bountyMintingPolicyId,
       },
       {
@@ -146,6 +126,26 @@ export const spendOracleNFT = async (wallet: IWallet) => {
             fields: [
               {
                 bytes: resolveScriptHash(bountyBoardScriptCbor, "V3"),
+              },
+            ],
+          },
+          {
+            constructor: 1,
+            fields: [],
+          },
+        ],
+      },
+      {
+        bytes: idMintingPolicyId,
+      },
+      {
+        constructor: 0,
+        fields: [
+          {
+            constructor: 1,
+            fields: [
+              {
+                bytes: resolveScriptHash(idSpendingScriptCbor, "V3"),
               },
             ],
           },
@@ -168,11 +168,7 @@ export const spendOracleNFT = async (wallet: IWallet) => {
           },
           {
             constructor: 1,
-            fields: [
-              {
-                bytes: stakeCredentialHash,
-              },
-            ],
+            fields: [],
           },
         ],
       },

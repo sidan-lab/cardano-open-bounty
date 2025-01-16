@@ -11,10 +11,13 @@ import {
   mTuple,
   CIP68_100,
   CIP68_222,
-  deserializeAddress,
+  // deserializeAddress,
+  pubKeyAddress,
+  mConStr0,
 } from "@meshsdk/core";
 import { getUtxoApiRoute, updateUtxoApiRoute } from "./api_common";
 import { ApiMiddleware } from "@/middleware/api";
+import { ContributerDatum, OracleCounterDatum } from "../api/type";
 
 export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
   if (!wallet) {
@@ -35,13 +38,14 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
     fetcher: blockfrost,
     submitter: blockfrost,
     evaluator: new OfflineEvaluator(blockfrost, "preprod"),
+    verbose: true,
   });
 
   const changeAddress = await wallet.getChangeAddress();
   const utxos = await wallet.getUtxos();
   const collateral = (await wallet.getCollateral())[0];
-  const usedAddress = (await wallet.getUsedAddresses())[0];
-  const { pubKeyHash, stakeCredentialHash } = deserializeAddress(usedAddress);
+  // const usedAddress = (await wallet.getUsedAddresses())[0];
+  // const { pubKeyHash } = deserializeAddress(usedAddress);
 
   const idOracleCounterSpendingScriptCbor = applyCborEncoding(
     blueprint.validators[12]!.compiledCode
@@ -102,39 +106,31 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
     );
 
     const { count } = await api.getOracleCounterNum(
-      oracleResult.oracleTxHash,
-      oracleResult.oracleOutputIndex
+      counterResult.oracleTxHash,
+      counterResult.oracleOutputIndex
     );
 
-    const oracleDatum = JSON.stringify({
+    const updatedOracleDatum: OracleCounterDatum = {
       constructor: 0,
       fields: [
         {
           int: count + 1,
         },
-        {
-          constructor: 0,
-          fields: [
-            {
-              constructor: 0,
-              fields: [
-                {
-                  bytes: pubKeyHash,
-                },
-              ],
-            },
-            {
-              constructor: 1,
-              fields: [
-                {
-                  bytes: stakeCredentialHash,
-                },
-              ],
-            },
-          ],
-        },
+        pubKeyAddress(process.env.NEXT_PUBLIC_PUB_KEY_HASH!),
       ],
-    });
+    };
+
+    const contributerDatum: ContributerDatum = {
+      constructor: 0,
+      fields: [
+        {
+          bytes: stringToHex(gitHub),
+        },
+        { list: [] },
+      ],
+    };
+
+    console.log(oracleResult.oracleTxHash);
 
     const unsignedTx = await txBuilder
       .readOnlyTxInReference(
@@ -143,43 +139,33 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
       )
       .spendingPlutusScriptV3()
       .txIn(counterResult.oracleTxHash, counterResult.oracleOutputIndex)
-      .txInRedeemerValue(
-        JSON.stringify({
-          constructor: 0,
-          fields: [],
-        }),
-        "JSON"
-      )
+      .txInRedeemerValue(mConStr0([]))
       .txInScript(idOracleCounterSpendingScriptCbor)
       .txInInlineDatumPresent()
       .mintPlutusScriptV3()
       .mint(
         "1",
         idMintingPolicyId,
-        CIP68_100(process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString())
+        CIP68_100(
+          stringToHex(
+            process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString()
+          )
+        )
       )
       .mintingScript(idMintingScriptCbor)
-      .mintRedeemerValue(
-        JSON.stringify({
-          constructor: 0,
-          fields: [],
-        }),
-        "JSON"
-      )
+      .mintRedeemerValue(mConStr0([]))
       .mintPlutusScriptV3()
       .mint(
         "1",
         idMintingPolicyId,
-        CIP68_222(process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString())
+        CIP68_222(
+          stringToHex(
+            process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString()
+          )
+        )
       )
       .mintingScript(idMintingScriptCbor)
-      .mintRedeemerValue(
-        JSON.stringify({
-          constructor: 0,
-          fields: [],
-        }),
-        "JSON"
-      )
+      .mintRedeemerValue(mConStr0([]))
       .txOut(idOracleCounterAddress, [
         {
           unit:
@@ -188,29 +174,20 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
           quantity: "1",
         },
       ])
-      .txOutInlineDatumValue(oracleDatum, "JSON")
+      .txOutInlineDatumValue(updatedOracleDatum, "JSON")
       .txOut(idSpendingScriptAddress, [
         {
           unit:
             idMintingPolicyId +
             CIP68_100(
-              process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString()
+              stringToHex(
+                process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString()
+              )
             ),
           quantity: "1",
         },
       ])
-      .txOutInlineDatumValue(
-        JSON.stringify({
-          constructor: 0,
-          fields: [
-            {
-              bytes: stringToHex(gitHub),
-            },
-            { list: [] },
-          ],
-        }),
-        "JSON"
-      )
+      .txOutInlineDatumValue(contributerDatum, "JSON")
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,
