@@ -15,15 +15,9 @@ const CreateIDToken: React.FC = () => {
 
   useEffect(() => {
     const checkIDTokenOwnership = async () => {
-      const tokenOwnership = false;
-
       const hasId = await api.findIdtoken();
 
-      if (!tokenOwnership) {
-        setShowMintPrompt(true);
-      } else {
-        setHasIDToken(hasId.hasIdToken);
-      }
+      setHasIDToken(hasId.hasIdToken);
     };
     if (connected) {
       checkIDTokenOwnership();
@@ -55,7 +49,7 @@ const CreateIDToken: React.FC = () => {
         </button>
       )}
 
-      {hasIDToken && (
+      {!hasIDToken && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg z-50 w-1/3">
             <h2 className="text-lg font-bold text-gray-300">
