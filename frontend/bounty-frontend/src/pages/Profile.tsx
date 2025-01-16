@@ -36,13 +36,8 @@ const Profile: React.FC = () => {
     { id: 7, title: "Contributed Bounty Token 1", amount: 50 },
     { id: 8, title: "Contributed Bounty Token 2", amount: 25 },
     { id: 9, title: "Contributed Bounty Token 3", amount: 100 },
-    { id: 10, title: "Contributed Bounty Token 4", amount: 75 },
+    { id: 10, title: "Contributed Bounty Token 4", amount: 100000 },
   ];
-
-  const totalAmount = userBountyTokensContributed.reduce(
-    (total, token) => total + token.amount,
-    0
-  );
 
   useEffect(() => {
     const getWalletBalance = async () => {
@@ -61,6 +56,11 @@ const Profile: React.FC = () => {
       connect("eternl");
     }
   }, [connect, connected, wallet]);
+
+  const totalContributions = userBountyTokensContributed.reduce(
+    (total, token) => total + token.amount,
+    0
+  );
 
   return (
     <div className="bg-gray-900 w-full text-white text-center">
@@ -141,10 +141,12 @@ const Profile: React.FC = () => {
             </h1>
             <div className="bg-gray-800 rounded-lg shadow-lg p-8 w-full max-w-2xl">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">User Details</h2>
+                <h2 className="text-3xl font-extrabold mb-3">User Details</h2>
                 <p className="text-sm text-gray-300 mt-1">
                   ID Token:{" "}
-                  <span className="font-medium">{userToken || "None"}</span>
+                  <span className="font-medium italic">
+                    {userToken || "None"}
+                  </span>
                 </p>
                 <p className="text-sm text-gray-300">
                   GitHub URL:{" "}
@@ -158,16 +160,16 @@ const Profile: React.FC = () => {
                       {userGithubUrl}
                     </a>
                   ) : (
-                    <span className="font-medium">None</span>
+                    <span className="font-medium italic">None</span>
                   )}
                 </p>
               </div>
 
               <div className="bg-gray-700 rounded-lg">
-                <h2 className="text-2xl font-bold sticky top-0 bg-gray-700 z-10 p-4">
+                <h2 className="text-3xl font-extrabold sticky top-0 bg-gray-700 z-10 p-4">
                   Bounty Tokens Contributed
                 </h2>
-                <div className="h-48 overflow-y-auto p-4">
+                <div className="h-96 overflow-y-auto p-4">
                   <ul className="space-y-4">
                     {userBountyTokensContributed.map((token) => (
                       <li
@@ -179,15 +181,24 @@ const Profile: React.FC = () => {
                             {token.title}
                           </h3>
                           <p className="text-sm text-gray-400">
-                            Amount: {token.amount}
+                            Amount:{" "}
+                            <span className="font-bold">{token.amount}</span>
                           </p>
                         </div>
-                        <span className="text-sm text-gray-300">
+                        <span className="text-sm text-gray-300 font-medium">
                           ID: {token.id}
                         </span>
                       </li>
                     ))}
                   </ul>
+                </div>
+                <div className="p-4 border-t border-gray-600">
+                  <h3 className="text-lg font-semibold text-gray-200">
+                    Total amount:
+                  </h3>
+                  <p className="text-2xl font-extrabold text-green-400">
+                    {totalContributions}
+                  </p>
                 </div>
               </div>
             </div>
