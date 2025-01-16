@@ -80,10 +80,7 @@ const About: React.FC = () => {
                         {item.name}
                       </Link>
                     ))}
-
-                    <button className="text-white bg-gray-800 hover:bg-gray-700 rounded-lg text-lg px-4 py-2">
-                      Admin
-                    </button>
+ 
                   </div>
                 </div>
 

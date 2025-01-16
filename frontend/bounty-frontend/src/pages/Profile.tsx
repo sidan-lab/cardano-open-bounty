@@ -33,10 +33,14 @@ const Profile: React.FC = () => {
     return classes.filter(Boolean).join(" ");
   }
   const userBountyTokensContributed = [
-    { id: 7, title: "Contributed Bounty Token 1", amount: 50 },
-    { id: 8, title: "Contributed Bounty Token 2", amount: 25 },
-    { id: 9, title: "Contributed Bounty Token 3", amount: 100 },
-    { id: 10, title: "Contributed Bounty Token 4", amount: 100000 },
+    { name: "Contributed Bounty Token 1", reward: 50 },
+    { name: "Contributed Bounty Token 2", reward: 25 },
+    { name: "Contributed Bounty Token 3", reward: 100 },
+    { name: "Contributed Bounty Token 4", reward: 100000 },
+    { name: "Contributed Bounty Token 6", reward: 50 },
+    { name: "Contributed Bounty Token 9", reward: 25 },
+    { name: "Contributed Bounty Token 11", reward: 100 },
+    { name: "Contributed Bounty Token 32", reward: 100000 },
   ];
 
   useEffect(() => {
@@ -58,7 +62,7 @@ const Profile: React.FC = () => {
   }, [connect, connected, wallet]);
 
   const totalContributions = userBountyTokensContributed.reduce(
-    (total, token) => total + token.amount,
+    (total, token) => total + token.reward,
     0
   );
 
@@ -92,17 +96,13 @@ const Profile: React.FC = () => {
                         aria-current={item.current ? "page" : undefined}
                         className={classNames(
                           item.current
-                            ? "bg-blue-600 text-white font-bold shadow-lg rounded-lg text-lg px-4 py-2 transition duration-200 ease-in-out"
-                            : "text-gray-300 hover:bg-gray-700 hover:text-white font-medium transition duration-200 ease-in-out rounded-lg text-lg px-4 py-2"
+                            ? "bg-shadow text-blue-300 font-bold shadow-lg rounded-lg text-lg px-4 py-2"
+                            : "text-white hover:bg-gray-700 hover:text-white font-medium transition duration-200 ease-in-out rounded-lg text-lg px-4 py-2"
                         )}
                       >
                         {item.name}
                       </Link>
                     ))}
-
-                    <button className="text-white bg-gray-800 hover:bg-gray-700 rounded-lg text-lg px-4 py-2">
-                      Admin
-                    </button>
                   </div>
                 </div>
 
@@ -134,15 +134,15 @@ const Profile: React.FC = () => {
           </DisclosurePanel>
         </Disclosure>
 
-        <div className="bg-gray-900 w-full py-6 px-4">
+        <div className="bg-gray-800 w-full py-6 px-4 rounded-lg shadow-xl">
           <main className="flex flex-col items-center">
             <h1 className="text-4xl font-extrabold mb-6">
               Profile Information
             </h1>
-            <div className="bg-gray-800 rounded-lg shadow-lg p-8 w-full max-w-2xl">
+            <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-2xl">
               <div className="mb-6">
                 <h2 className="text-3xl font-extrabold mb-3">User Details</h2>
-                <p className="text-sm text-gray-300 mt-1">
+                <p className="text-sm text-gray-300 justify-left">
                   ID Token:{" "}
                   <span className="font-medium italic">
                     {userToken || "None"}
@@ -155,7 +155,7 @@ const Profile: React.FC = () => {
                       href={userGithubUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline"
+                      className="text-blue-400 hover:underline transition duration-200"
                     >
                       {userGithubUrl}
                     </a>
@@ -165,29 +165,22 @@ const Profile: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-gray-700 rounded-lg">
-                <h2 className="text-3xl font-extrabold sticky top-0 bg-gray-700 z-10 p-4">
+              <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+                <h2 className="text-3xl font-extrabold sticky top-0 bg-gray-800 z-10 p-4">
                   Bounty Tokens Contributed
                 </h2>
                 <div className="h-96 overflow-y-auto p-4">
                   <ul className="space-y-4">
                     {userBountyTokensContributed.map((token) => (
                       <li
-                        key={token.id}
-                        className="border border-gray-600 p-4 rounded-lg flex justify-between items-center hover:bg-gray-600 transition duration-200"
+                        key={token.name}
+                        className="bg-gray-700 transition duration-200 rounded-lg flex justify-between items-center p-4 transform hover:scale-105 hover:shadow-lg"
                       >
-                        <div>
-                          <h3 className="text-lg font-semibold">
-                            {token.title}
-                          </h3>
-                          <p className="text-sm text-gray-400">
-                            Amount:{" "}
-                            <span className="font-bold">{token.amount}</span>
-                          </p>
-                        </div>
-                        <span className="text-sm text-gray-300 font-medium">
-                          ID: {token.id}
-                        </span>
+                        <h3 className="text-lg font-semibold">{token.name}</h3>
+                        <h4 className="text-lg font-semibold">
+                          Amount:{" "}
+                          <span className="font-bold">{token.reward}</span>
+                        </h4>
                       </li>
                     ))}
                   </ul>
