@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CreateBountyToken from "./CreateBountyToken";
 import { useWallet } from "@meshsdk/react";
 import CreateIDToken from "./CreateIDToken";
 import SearchBars from "./SearchBar";
+import { ApiMiddleware } from "@/middleware/api";
 interface Bounty {
   name: string;
   tasks: string;
@@ -10,7 +11,8 @@ interface Bounty {
 }
 
 const BountyTable: React.FC = () => {
-  const { connected } = useWallet();
+  const { wallet, connected } = useWallet();
+  const api = new ApiMiddleware(wallet);
 
   const [bounties, setBounties] = useState<Bounty[]>([
     {
@@ -94,6 +96,16 @@ const BountyTable: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [hasIDToken, setHasIDToken] = useState(false);
+  
+  useEffect(() => {
+      const checkIDTokenOwnership = async () => {
+        const hasId = await api.findIdtoken();
+        setHasIDToken(hasId.hasIdToken);
+      };
+      if (connected) {
+        checkIDTokenOwnership();
+      }
+    }, [connected, wallet]);
 
   const handleCreateBounty = (newBounty: Bounty) => {
     setBounties((prevState) => [...prevState, newBounty]);

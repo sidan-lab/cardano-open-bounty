@@ -9,7 +9,7 @@ const CreateIDToken: React.FC = () => {
   const [formVisible, setFormVisible] = useState(false);
   const [github, setGithub] = useState("");
   const [showMintPrompt, setShowMintPrompt] = useState(false);
-  const [hasIDToken, setHasIDToken] = useState(false);
+  const [, setHasIDToken] = useState(false);
 
   const api = new ApiMiddleware(wallet);
 
@@ -18,6 +18,7 @@ const CreateIDToken: React.FC = () => {
       const hasId = await api.findIdtoken();
 
       setHasIDToken(hasId.hasIdToken);
+      setShowMintPrompt(!hasId.hasIdToken);
     };
     if (connected) {
       checkIDTokenOwnership();
@@ -49,7 +50,7 @@ const CreateIDToken: React.FC = () => {
         </button>
       )}
 
-      {!hasIDToken && (
+      { showMintPrompt && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg z-50 w-1/3">
             <h2 className="text-lg font-bold text-gray-300">
