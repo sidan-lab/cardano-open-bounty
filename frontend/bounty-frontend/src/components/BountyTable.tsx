@@ -92,9 +92,8 @@ const BountyTable: React.FC = () => {
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState<string>(""); // New state for search query
-
-  // const [hasIDToken, setHasIDToken] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>(""); 
+  const [hasIDToken, setHasIDToken] = useState(false);
 
   const handleCreateBounty = (newBounty: Bounty) => {
     setBounties((prevState) => [...prevState, newBounty]);
@@ -107,7 +106,6 @@ const BountyTable: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // Filter bounties based on the search query
   const filteredBounties = bounties.filter(
     (bounty) =>
       bounty.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -115,6 +113,7 @@ const BountyTable: React.FC = () => {
   );
 
   const totalPages = Math.ceil(filteredBounties.length / rowsPerPage);
+
   const displayedBounties = filteredBounties.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
@@ -122,15 +121,16 @@ const BountyTable: React.FC = () => {
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
-    setCurrentPage(1); // Reset to the first page on search
+    setCurrentPage(1);
   };
+
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg mx-auto max-w-full px-4 sm:px-6 lg:px-8 mt-8 w-full text-white dark:bg-gray-900">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-4xl font-bold dark:text-white">Bounty Board</h2>
         <div className="flex space-x-2">
           <CreateIDToken />
-          {connected && (
+          {connected && hasIDToken &&(
             <CreateBountyToken onCreateBounty={handleCreateBounty} />
           )}
         </div>

@@ -1,4 +1,4 @@
-import { CardanoWallet, MeshBadge } from "@meshsdk/react";
+import { CardanoWallet } from "@meshsdk/react";
 import { useWallet } from "@meshsdk/react";
 import React, { useEffect, useState } from "react";
 import {
@@ -12,6 +12,8 @@ import { mintOracleNFT } from "./transactions/mint_oracle_nft";
 import { mintOracleCounter } from "./transactions/mint_oracle_counter";
 import { spendOracleNFT } from "./transactions/spend_oracle_nft";
 import Link from "next/link";
+import Footer from "@/components/Footer";
+
 export default function Home() {
   const basenavigation = [
     { name: "Home", href: "#", current: true },
@@ -155,53 +157,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="bg-gray-900 text-gray-300 rounded-lg shadow m-4 dark:bg-gray-900">
-        <div className="w-full max-w-screen-xl mx-auto p-4 md:py-8 text-center">
-          <hr className="my-6 border-gray-700 dark:border-gray-700 lg:my-8" />
-          <div className="sm:flex sm:items-center sm:justify-between">
-            <MeshBadge isDark={true} />
-            <ul className="flex flex-wrap items-center mb-6 text-sm font-medium text-gray-300 sm:mb-0 dark:text-gray-300 justify-center">
-              <li>
-                <a
-                  href="#"
-                  className="hover:underline me-4 md:me-6 text-base transition-colors duration-200 hover:text-blue-500"
-                >
-                  About
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:underline me-4 md:me-6 text-base transition-colors duration-200 hover:text-blue-500"
-                >
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:underline me-4 md:me-6 text-base transition-colors duration-200 hover:text-blue-500"
-                >
-                  Licensing
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:underline text-base transition-colors duration-200 hover:text-blue-500"
-                >
-                  Contact
-                </a>
-              </li>
-            </ul>
-          </div>
-          <hr className="my-6 border-gray-700 dark:border-gray-700 lg:my-8" />
-
-          <span className="block text-sm text-gray-300 sm:text-center dark:text-gray-300">
-            © 2025 Delta Lab Limited. All Rights Reserved.
-          </span>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

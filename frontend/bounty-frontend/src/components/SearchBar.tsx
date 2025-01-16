@@ -8,13 +8,12 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearchChange }) => {
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
     setSearchTerm(query);
-    onSearchChange(query); 
+    onSearchChange(query);
   };
 
-
-    function handleSearch(event: React.FormEvent) {
-       event.preventDefault(); 
-    }
+  function handleSearch(event: React.FormEvent) {
+    event.preventDefault();
+  }
 
   return (
     <form onChange={handleSearch} className="max-w-md mx-auto">
@@ -51,7 +50,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearchChange }) => {
           placeholder="Search bounties..."
           required
         />
-      
       </div>
     </form>
   );

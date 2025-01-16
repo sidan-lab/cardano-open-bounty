@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-
 import { mintBountyToken } from "@/pages/transactions/bounty_token_mint";
 import { useWallet } from "@meshsdk/react";
 
@@ -17,12 +16,13 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
   onCreateBounty,
 }) => {
   const [formVisible, setFormVisible] = useState(false);
+  const [, setIsLoading] = useState(false);
+  const { wallet } = useWallet();
   const [newBounty, setNewBounty] = useState<Bounty>({
     name: "",
     tasks: "",
     reward: "",
   });
-  const [, setIsLoading] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -36,10 +36,10 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true); 
+    setIsLoading(true);
 
     async function performTransaction(): Promise<boolean> {
-      const success = true; 
+      const success = true;
       return success;
     }
 
@@ -53,14 +53,10 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
         tasks: "",
         reward: "",
       });
-     
     } else {
       console.error("Transaction failed");
     }
   };
-
-  const { wallet } = useWallet();
-  
 
   return (
     <div>

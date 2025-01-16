@@ -5,7 +5,7 @@ import { useWallet } from "@meshsdk/react";
 const CreateIDToken: React.FC = () => {
   const { wallet, connected } = useWallet();
   const [formVisible, setFormVisible] = useState(false);
-  const [github, setGithub] = useState(""); 
+  const [github, setGithub] = useState("");
   const [showMintPrompt, setShowMintPrompt] = useState(false);
   const [hasIDToken, setHasIDToken] = useState(false);
 
@@ -28,13 +28,10 @@ const CreateIDToken: React.FC = () => {
     e.preventDefault();
 
     try {
-      
       await console.log("Minted ID Token with GitHub URL:", github);
-      
 
-
-      setGithub(""); 
-      setFormVisible(false); 
+      setGithub("");
+      setFormVisible(false);
     } catch (error) {
       console.error("Error minting ID token:", error);
     }
@@ -127,8 +124,8 @@ const CreateIDToken: React.FC = () => {
                   <input
                     type="text"
                     id="github"
-                    value={github} 
-                    onChange={(e) => setGithub(e.target.value)} 
+                    value={github}
+                    onChange={(e) => setGithub(e.target.value)}
                     className="rounded-none rounded-r-lg bg-gray-700 border border-gray-600 text-gray-300 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400"
                     placeholder="Enter your GitHub URL..."
                     required
