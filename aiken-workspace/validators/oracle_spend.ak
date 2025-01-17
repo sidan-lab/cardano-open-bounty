@@ -1,12 +1,11 @@
-use aiken/collection/list
 use cardano/address.{from_script}
-use cardano/assets.{add, flatten, from_asset}
+use cardano/assets.{add, from_asset}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, find_input,
 }
 use cocktail.{
   address_payment_key, inputs_at_with_policy, key_signed, only_minted_token,
-  outputs_at_with_policy,
+  outputs_at_with_policy, value_length, value_tokens,
 }
 use mocktail.{
   complete, mint, mock_policy_id, mock_pub_key_address, mock_pub_key_hash,
@@ -31,8 +30,7 @@ validator oracle {
       owner,
     }) = datum_opt
     expect Some(own_input) = find_input(inputs, input)
-    expect [(oracle_nft_policy, _, _)] =
-      list.filter(flatten(own_input.output.value), fn(x) { x.1st != "" })
+    expect [(oracle_nft_policy, _, _)] = value_tokens(own_input.output.value)
     let own_address = own_input.output.address
     let owner_key = address_payment_key(owner)
     let is_owner_signed = key_signed(extra_signatories, owner_key)
@@ -44,9 +42,9 @@ validator oracle {
       )
     is {
       (MintNFT, [_], [only_output]) -> {
-        let is_output_value_clean = list.length(flatten(only_output.value)) == 2
-        let is_datum_updated =
-          only_output.datum != InlineDatum(
+        let is_output_value_clean = value_length(only_output.value) == 2
+        let is_datum_unchanged =
+          only_output.datum == InlineDatum(
             OracleDatum {
               bounty_token_policy_id,
               bounty_board_address,
@@ -55,7 +53,7 @@ validator oracle {
               owner,
             },
           )
-        is_output_value_clean? && is_datum_updated? && is_owner_signed?
+        is_output_value_clean? && is_datum_unchanged? && is_owner_signed?
       }
       (StopOracle, [_], _) ->
         only_minted_token(mint, oracle_nft_policy, "", -1) && is_owner_signed?
@@ -70,27 +68,27 @@ validator oracle {
 
 type MintTestCase {
   is_oracle_output_clean: Bool,
-  is_datum_updated: Bool,
+  is_datum_unchanged: Bool,
 }
 
+const mock_oracle_datum: OracleDatum =
+  OracleDatum {
+    bounty_token_policy_id: mock_policy_id(0),
+    bounty_board_address: from_script("bounty_board_hold"),
+    id_token_policy_id: mock_policy_id(1),
+    id_token_store_address: from_script("ref_token_hold"),
+    owner: mock_pub_key_address(0, None),
+  }
+
 fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
-  let MintTestCase { is_oracle_output_clean, is_datum_updated } = test_case
+  let MintTestCase { is_oracle_output_clean, is_datum_unchanged } = test_case
 
   let input_value =
     from_asset(mock_policy_id(0), "", 1) |> add("", "", 2_000_000)
 
   mocktail_tx()
     |> tx_in(True, mock_tx_hash(0), 0, input_value, mock_script_address(0, None))
-    |> tx_in_inline_datum(
-        True,
-        OracleDatum {
-          bounty_token_policy_id: mock_policy_id(0),
-          bounty_board_address: from_script("bounty_board_hold"),
-          id_token_policy_id: mock_policy_id(1),
-          id_token_store_address: from_script("ref_token_hold"),
-          owner: mock_pub_key_address(0, None),
-        },
-      )
+    |> tx_in_inline_datum(True, mock_oracle_datum)
     |> tx_out(is_oracle_output_clean, mock_script_address(0, None), input_value)
     |> tx_out(
         !is_oracle_output_clean,
@@ -99,16 +97,13 @@ fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
       )
     |> tx_out_inline_datum(
         True,
-        OracleDatum {
-          bounty_token_policy_id: if is_datum_updated {
-            mock_policy_id(99999)
-          } else {
-            mock_policy_id(0)
-          },
-          bounty_board_address: from_script("bounty_board_hold"),
-          id_token_policy_id: mock_policy_id(1),
-          id_token_store_address: from_script("ref_token_hold"),
-          owner: mock_pub_key_address(0, None),
+        if is_datum_unchanged {
+          mock_oracle_datum
+        } else {
+          OracleDatum {
+            ..mock_oracle_datum,
+            bounty_token_policy_id: mock_policy_id(99999),
+          }
         },
       )
     |> mint(True, 1, mock_policy_id(1), "collection (0)")
@@ -117,57 +112,35 @@ fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
 }
 
 test success_mint() {
-  let datum =
-    OracleDatum {
-      bounty_token_policy_id: mock_policy_id(0),
-      bounty_board_address: from_script("bounty_board_hold"),
-      id_token_policy_id: mock_policy_id(1),
-      id_token_store_address: from_script("ref_token_hold"),
-      owner: mock_pub_key_address(0, None),
-    }
-
+  let datum = mock_oracle_datum
   let redeemer = MintNFT
   let tx =
     mock_mint_tx(
-      MintTestCase { is_oracle_output_clean: True, is_datum_updated: True },
+      MintTestCase { is_oracle_output_clean: True, is_datum_unchanged: True },
     )
 
   oracle.spend(Some(datum), redeemer, mock_utxo_ref(0, 0), tx)
 }
 
 test fail_mint_with_unclean_output() {
-  let datum =
-    OracleDatum {
-      bounty_token_policy_id: mock_policy_id(0),
-      bounty_board_address: from_script("bounty_board_hold"),
-      id_token_policy_id: mock_policy_id(1),
-      id_token_store_address: from_script("ref_token_hold"),
-      owner: mock_pub_key_address(0, None),
-    }
+  let datum = mock_oracle_datum
   let redeemer = MintNFT
 
   let tx =
     mock_mint_tx(
-      MintTestCase { is_oracle_output_clean: False, is_datum_updated: True },
+      MintTestCase { is_oracle_output_clean: False, is_datum_unchanged: True },
     )
 
   !oracle.spend(Some(datum), redeemer, mock_utxo_ref(0, 0), tx)
 }
 
-test fail_mint_without_count_updated() {
-  let datum =
-    OracleDatum {
-      bounty_token_policy_id: mock_policy_id(0),
-      bounty_board_address: from_script("bounty_board_hold"),
-      id_token_policy_id: mock_policy_id(1),
-      id_token_store_address: from_script("ref_token_hold"),
-      owner: mock_pub_key_address(0, None),
-    }
+test fail_mint_without_datum_tampered() {
+  let datum = mock_oracle_datum
   let redeemer = MintNFT
 
   let tx =
     mock_mint_tx(
-      MintTestCase { is_oracle_output_clean: True, is_datum_updated: False },
+      MintTestCase { is_oracle_output_clean: True, is_datum_unchanged: False },
     )
 
   !oracle.spend(Some(datum), redeemer, mock_utxo_ref(0, 0), tx)
@@ -184,30 +157,14 @@ fn mock_stop_oracle_tx(test_case: StopOracleTestCase) -> Transaction {
 
   mocktail_tx()
     |> tx_in(True, mock_tx_hash(0), 0, input_value, mock_script_address(0, None))
-    |> tx_in_inline_datum(
-        True,
-        OracleDatum {
-          bounty_token_policy_id: mock_policy_id(0),
-          bounty_board_address: from_script("bounty_board_hold"),
-          id_token_policy_id: mock_policy_id(1),
-          id_token_store_address: from_script("ref_token_hold"),
-          owner: mock_pub_key_address(0, None),
-        },
-      )
+    |> tx_in_inline_datum(True, mock_oracle_datum)
     |> mint(is_oracle_nft_burnt, -1, mock_policy_id(0), "")
     |> required_signer_hash(True, mock_pub_key_hash(0))
     |> complete()
 }
 
 test success_stop() {
-  let datum =
-    OracleDatum {
-      bounty_token_policy_id: mock_policy_id(0),
-      bounty_board_address: from_script("bounty_board_hold"),
-      id_token_policy_id: mock_policy_id(1),
-      id_token_store_address: from_script("ref_token_hold"),
-      owner: mock_pub_key_address(0, None),
-    }
+  let datum = mock_oracle_datum
   let redeemer = StopOracle
   let tx = mock_stop_oracle_tx(StopOracleTestCase { is_oracle_nft_burnt: True })
 
@@ -215,15 +172,7 @@ test success_stop() {
 }
 
 test fail_stop_with_oracle_nft_not_burnt() {
-  let datum =
-    OracleDatum {
-      bounty_token_policy_id: mock_policy_id(0),
-      bounty_board_address: from_script("bounty_board_hold"),
-      id_token_policy_id: mock_policy_id(1),
-      id_token_store_address: from_script("ref_token_hold"),
-      owner: mock_pub_key_address(0, None),
-    }
-
+  let datum = mock_oracle_datum
   let redeemer = StopOracle
 
   let tx =
