@@ -1,8 +1,11 @@
 use aiken/cbor
 use aiken/collection/dict
 use aiken/collection/list
-use cardano/assets.{PolicyId}
-use cardano/transaction.{OutputReference, Transaction}
+use cardano/assets.{PolicyId, add, from_asset, from_lovelace}
+use cardano/transaction.{Input, OutputReference, Transaction, placeholder}
+use mocktail.{
+  mock_policy_id, mock_pub_key_address, mock_pub_key_output, mock_utxo_ref,
+}
 use oracle_token_type.{Action, CheckBurn, CheckMint}
 
 validator one_shot(utxo_ref: OutputReference) {
@@ -31,4 +34,63 @@ validator one_shot(utxo_ref: OutputReference) {
 test redeemer_hex() {
   let redeemer = CheckMint
   cbor.serialise(redeemer) != #"d8799f581c1b25744c74cf166de9feee1ae6f8cc8b7281a12e6f4d503bb2ecc67cd87980ff"
+}
+
+test success_mint() {
+  let redeemer = CheckMint
+  let input_utxo = mock_utxo_ref(0, 1)
+  let policy_id: PolicyId =
+    #"1c1b7afe8affbee1505cf3ec5a58bd2734d4ffdfcc9b9f059625bd76"
+
+  let tx =
+    Transaction {
+      ..placeholder,
+      mint: from_asset(policy_id, "", 1),
+      inputs: [
+        Input {
+          output_reference: input_utxo,
+          output: mock_pub_key_output(
+            mock_pub_key_address(0, None),
+            from_lovelace(1000000),
+          ),
+        },
+      ],
+    }
+
+  one_shot.mint(input_utxo, redeemer, policy_id, tx)
+}
+
+test fail_mint_no_utxo_ref_supply() {
+  let redeemer = CheckMint
+  let policy_id = mock_policy_id(0)
+
+  !one_shot.mint(mock_utxo_ref(0, 0), redeemer, policy_id, placeholder)
+}
+
+test success_burn() {
+  let redeemer = CheckBurn
+  let policy_id = mock_policy_id(0)
+
+  let tx = Transaction { ..placeholder, mint: from_asset(policy_id, "", -1) }
+  one_shot.mint(mock_utxo_ref(0, 0), redeemer, policy_id, tx)
+}
+
+test success_burn_with_other_minting() {
+  let redeemer = CheckBurn
+  let policy_id = mock_policy_id(0)
+
+  let tx =
+    Transaction {
+      ..placeholder,
+      mint: from_asset(policy_id, "", -1) |> add(mock_policy_id(1), "", 1),
+    }
+  one_shot.mint(mock_utxo_ref(0, 0), redeemer, policy_id, tx)
+}
+
+test fail_burn_with_mint() {
+  let redeemer = CheckBurn
+  let policy_id = mock_policy_id(0)
+
+  let tx = Transaction { ..placeholder, mint: from_asset(policy_id, "", 1) }
+  !one_shot.mint(mock_utxo_ref(0, 0), redeemer, policy_id, tx)
 }

@@ -4,7 +4,7 @@
 
 Oracle NFT
 
-## User Action:
+## User Action
 
 1. Mint - Redeemer
 
@@ -16,22 +16,23 @@ Oracle NFT
 
    - check github
 
- -> MInt bounty token(assetname,policyid)
+   -> MInt bounty token(assetname,policyid)
 
 2. Burn - redeemer
+
    - check id token
-   - check signatories 
+   - check signatories
    - check contributer datum is update correct
-   
+
    -> burn
 
 3. Output contain money, minted NFT,
-     write datum(
+   write datum(
    - creater github
    - bounty money  
-   )
+     )
 
-## Requirement:
+## Requirement
 
 1. Only one bounty token mint at the same time
 2. bounty token can be minted iff user input provide valid ID token
