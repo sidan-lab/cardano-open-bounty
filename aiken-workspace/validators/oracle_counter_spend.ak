@@ -3,18 +3,15 @@ use cardano/assets.{add, flatten, from_asset}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, find_input,
 }
-use cocktail/vodka_address.{address_payment_key}
-use cocktail/vodka_extra_signatories.{key_signed}
-use cocktail/vodka_inputs.{inputs_at_with_policy}
-use cocktail/vodka_mints.{only_minted_token}
-use cocktail/vodka_outputs.{outputs_at_with_policy}
-use mocktail.{
-  complete, mint, mocktail_tx, required_signer_hash, tx_in, tx_in_inline_datum,
-  tx_out, tx_out_inline_datum,
+use cocktail.{
+  address_payment_key, inputs_at_with_policy, key_signed, only_minted_token,
+  outputs_at_with_policy,
 }
-use mocktail/virgin_address.{mock_pub_key_address, mock_script_address}
-use mocktail/virgin_key_hash.{mock_policy_id, mock_pub_key_hash}
-use mocktail/virgin_output_reference.{mock_tx_hash, mock_utxo_ref}
+use mocktail.{
+  complete, mint, mock_policy_id, mock_pub_key_address, mock_pub_key_hash,
+  mock_script_address, mock_tx_hash, mock_utxo_ref, mocktail_tx,
+  required_signer_hash, tx_in, tx_in_inline_datum, tx_out, tx_out_inline_datum,
+}
 use oracle_token_type.{MintNFT, OracleCounterDatum, OracleRedeemer, StopOracle}
 
 validator oracle_counter {

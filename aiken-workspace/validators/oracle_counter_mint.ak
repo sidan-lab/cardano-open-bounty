@@ -1,11 +1,11 @@
 use aiken/collection/list
 use cardano/assets.{PolicyId, from_lovelace}
 use cardano/transaction.{Input, OutputReference, Transaction, placeholder}
-use cocktail/vodka_mints.{check_policy_only_burn}
-use mocktail.{complete, mint, mocktail_tx, tx_in}
-use mocktail/virgin_address.{mock_pub_key_address}
-use mocktail/virgin_key_hash.{mock_policy_id}
-use mocktail/virgin_output_reference.{mock_tx_hash, mock_utxo_ref}
+use cocktail.{check_policy_only_burn}
+use mocktail.{
+  complete, mint, mock_policy_id, mock_pub_key_address, mock_tx_hash,
+  mock_utxo_ref, mocktail_tx, tx_in,
+}
 use oracle_token_type.{Action, CheckBurn, CheckMint}
 
 validator oracle_counter_nft(utxo_ref: OutputReference) {

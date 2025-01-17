@@ -14,12 +14,10 @@ use cardano/transaction.{InlineDatum, Input, Transaction} as tx
 use cip.{cip68_100_prefix, cip68_222_prefix}
 use identity_token_type.{ContributerDatum, Contribution, to_contributer_datum}
 use mocktail.{
-  MocktailTx, add_extra_signatory, add_output, complete, mint,
-  mock_pub_key_address, mock_tx_hash, mocktail_tx, ref_tx_in,
-  ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
+  MocktailTx, add_extra_signatory, add_output, complete, mint, mock_policy_id,
+  mock_pub_key_address, mock_pub_key_hash, mock_script_output, mock_tx_hash,
+  mocktail_tx, ref_tx_in, ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
 }
-use mocktail/virgin_key_hash.{mock_policy_id, mock_pub_key_hash}
-use mocktail/virgin_outputs.{mock_script_output}
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
