@@ -61,6 +61,28 @@ export class BlockfrostService {
     }
   };
 
+  getIdRefTxHash = async (
+    policyId: string,
+    assetName: string
+  ): Promise<{ txHash: string; index: number }> => {
+    const asset = policyId + stringToHex(assetName);
+    const url = `/assets/${asset}/transactions`;
+    try {
+      const assetTransactions: AssetTransaction[] = await this.blockFrost.get(
+        url
+      );
+
+      const txHash = assetTransactions[0].tx_hash;
+
+      const index = assetTransactions[0].tx_index;
+
+      return { txHash, index };
+    } catch (error) {
+      console.error("Error geting idToken txHash:", error);
+      throw error;
+    }
+  };
+
   getIdTokenDatum = async (
     txHash: string,
     index: number

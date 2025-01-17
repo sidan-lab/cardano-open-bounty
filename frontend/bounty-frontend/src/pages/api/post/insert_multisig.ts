@@ -7,14 +7,28 @@ export default async function handler(
 ) {
   if (req.method === "POST") {
     try {
-      const { bountyName, requiredSigner } = req.body;
+      const {
+        bountyName,
+        signedTx,
+        requiredSigner,
+        txHash,
+        outputIndex,
+        contributor,
+      } = req.body;
       const sql = neon(process.env.DATABASE_URL!);
 
       const requiredSignersJSON = JSON.stringify(requiredSigner);
 
       await sql(
-        "INSERT INTO bounty_multi_signature (bountyName, requiredSigner) VALUES ($1, $2);",
-        [bountyName, requiredSignersJSON]
+        "INSERT INTO bounty_multi_signature (bountyName, signedTx, requiredSigner, txHash, outputIndex, contributor) VALUES ($1, $2, $3, $4, $5, $6);",
+        [
+          bountyName,
+          signedTx,
+          requiredSignersJSON,
+          txHash,
+          outputIndex,
+          contributor,
+        ]
       );
 
       res.status(200).json({ message: "Data inserted successfully" });

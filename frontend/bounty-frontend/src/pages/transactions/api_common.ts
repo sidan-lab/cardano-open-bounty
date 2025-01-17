@@ -69,7 +69,8 @@ export const insertUtxoApiRoute = async (
 export const updateMultiSigApiRoute = async (
   bountyName: string,
   updatedSignedTx: string,
-  updatedRequiredSigner: string[]
+  updatedRequiredSigner: string[],
+  contributor: string
 ) => {
   const config = {
     headers: {
@@ -83,6 +84,7 @@ export const updateMultiSigApiRoute = async (
       bountyName: bountyName,
       updatedSignedTx: updatedSignedTx,
       updatedRequiredSigner: updatedRequiredSigner,
+      contributor: contributor,
     }),
     config
   );
@@ -109,9 +111,31 @@ export const getMultiSigApiRoute = async (
   return { signedTx, requiredSigner };
 };
 
+export const getMultiSigTxApiRoute = async (
+  bountyName: string
+): Promise<{ outputIndex: number; txHash: string }> => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/get_multisig_tx",
+    JSON.stringify({
+      bountyName: bountyName,
+    }),
+    config
+  );
+  const { outputIndex, txHash } = res.data;
+  return { outputIndex, txHash };
+};
+
 export const insertMultiSigApiRoute = async (
   bountyName: string,
-  requiredSigner: string[]
+  requiredSigner: string[],
+  txHash: string,
+  outputIndex: string
 ) => {
   const config = {
     headers: {
@@ -123,7 +147,38 @@ export const insertMultiSigApiRoute = async (
     "../api/post/insert_multisig",
     JSON.stringify({
       bountyName: bountyName,
+      signedTx: null,
       requiredSigner: requiredSigner,
+      txHash: txHash,
+      outputIndex: outputIndex,
+      contributor: null,
+    }),
+    config
+  );
+  console.log("insert multisig res", res.data);
+};
+
+export const insertRedeemMultiSigApiRoute = async (
+  bountyName: string,
+  signedTx: string,
+  requiredSigner: string[],
+  contributor: string
+) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/insert_multisig",
+    JSON.stringify({
+      bountyName: bountyName,
+      signedTx: signedTx,
+      requiredSigner: requiredSigner,
+      txHash: null,
+      outputIndex: null,
+      contributor: contributor,
     }),
     config
   );

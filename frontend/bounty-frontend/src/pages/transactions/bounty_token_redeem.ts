@@ -11,12 +11,18 @@ import {
   // deserializeAddress,
   mConStr0,
   ByteString,
+  mConStr1,
 } from "@meshsdk/core";
-import { getUtxoApiRoute, insertMultiSigApiRoute } from "./api_common";
+import {
+  getMultiSigTxApiRoute,
+  getUtxoApiRoute,
+  insertMultiSigApiRoute,
+  insertRedeemMultiSigApiRoute,
+} from "./api_common";
 import { ApiMiddleware } from "@/middleware/api";
 import { BountyDatum } from "../api/type";
 
-export const mintBountyToken = async (
+export const burnBountyToken = async (
   bounty_name: string,
   issue_url: string,
   reward: number,
@@ -88,9 +94,15 @@ export const mintBountyToken = async (
   const api = new ApiMiddleware(wallet);
   try {
     const idNftTxResult = await api.getIdNftTx();
+    const idRefTxResult = await api.getIdRefTx();
+    const idInfoResult = await api.getIdInfo(
+      idRefTxResult.txHash,
+      idRefTxResult.index
+    );
     const oracleResult = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
     );
+    const bountyResult = await getMultiSigTxApiRoute(bounty_name);
 
     const converted_all_signatories: ByteString[] = all_signatories.map(
       (item) => ({ bytes: item })
@@ -115,10 +127,17 @@ export const mintBountyToken = async (
         oracleResult.oracleOutputIndex
       )
       .txIn(idNftTxResult.txHash, idNftTxResult.index)
+      .txIn(idRefTxResult.txHash, idRefTxResult.index)
+      .txInScript()
+      .txInInlineDatumPresent()
+      .txIn(bountyResult.txHash, bountyResult.outputIndex)
+      .txInRedeemerValue(mConStr1([]))
+      .txInScript()
+      .txInInlineDatumPresent()
       .mintPlutusScriptV3()
-      .mint("1", bountyMintingPolicyId, stringToHex(bounty_name))
+      .mint("-1", bountyMintingPolicyId, stringToHex(bounty_name))
       .mintingScript(bountyMintingScriptCbor)
-      .mintRedeemerValue(mConStr0([]))
+      .mintRedeemerValue(mConStr1([]))
       .txOut(bountyBoardScriptAddress, [
         {
           unit: bountyMintingPolicyId + stringToHex(bounty_name),
@@ -139,7 +158,12 @@ export const mintBountyToken = async (
     const signedTx = await wallet.signTx(unsignedTx, true);
     const txHash = await wallet.submitTx(signedTx);
 
-    await insertMultiSigApiRoute(bounty_name, all_signatories, txHash, "0");
+    await insertRedeemMultiSigApiRoute(
+      bounty_name,
+      signedTx,
+      all_signatories,
+      idInfoResult.gitHub
+    );
 
     console.log(txHash);
   } catch (e) {
