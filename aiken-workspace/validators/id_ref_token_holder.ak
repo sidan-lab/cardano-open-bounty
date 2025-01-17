@@ -1,10 +1,12 @@
 use aiken/collection/list
 use aiken/primitive/bytearray.{concat}
 use cardano/address.{from_script}
-use cardano/assets.{AssetName, PolicyId, flatten, from_asset, without_lovelace}
-use cardano/transaction.{OutputReference, Transaction} as tx
-use cip.{cip68_222}
-use cocktail.{convert_int_to_bytes}
+use cardano/assets.{AssetName, PolicyId, from_asset}
+use cardano/transaction.{OutputReference, Transaction, find_input} as tx
+use cip.{cip68_100, cip68_222}
+use cocktail.{convert_int_to_bytes, inputs_with}
+use cocktail/vodka_inputs.{inputs_with_policy}
+use cocktail/vodka_value.{value_tokens}
 use identity_token_type.{ContributerDatum}
 use mocktail.{
   complete, mock_policy_id, mock_pub_key_address, mock_script_address,
@@ -14,66 +16,30 @@ use mocktail.{
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
-validator update_identity_token(oracle_nft: (PolicyId, AssetName)) {
-  spend(_d, _r, own_ref: OutputReference, transaction: Transaction) {
+validator id_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
+  spend(_d, _r, input: OutputReference, transaction: Transaction) {
     let Transaction { inputs, reference_inputs, .. } = transaction
 
     let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
-    expect Some(own_input) =
-      inputs |> list.find(fn(input) { input.output_reference == own_ref })
+    expect Some(own_input) = find_input(inputs, input)
     expect [(policy_id, ref_asset_name, _)] =
-      own_input.output.value |> without_lovelace() |> flatten()
+      value_tokens(own_input.output.value)
 
     let name_check =
       ref_asset_name |> bytearray.starts_with(prefix: cip.cip68_100_prefix)
 
     // Get NFT AssetName
-    let nft_asset_name = ref_asset_name |> bytearray.drop(n: 4) |> cip68_222()
+    let nft_asset_name = ref_asset_name |> bytearray.drop(4) |> cip68_222()
 
-    let id_nft_input =
-      inputs
-        |> list.find(
-            fn(input) {
-              when
-                input.output.value
-                  |> flatten()
-                  |> list.find(
-                      fn((policy, asset_name, _)) {
-                        asset_name == nft_asset_name && policy == policy_id
-                      },
-                    )
-              is {
-                Some(_) -> True
-                _ -> False
-              }
-            },
-          )
+    expect [_id_nft_input] = inputs_with(inputs, policy_id, nft_asset_name)
 
-    let id_nft_check = id_nft_input != None
+    let bounty_token_inputs_length =
+      inputs_with_policy(inputs, oracle_input_datum.bounty_token_policy_id)
+        |> list.length()
 
-    let bounty_nft_check =
-      (
-        inputs
-          |> list.filter(
-              fn(input) {
-                when
-                  input.output.value
-                    |> flatten()
-                    |> list.find(
-                        fn((policy, _, _)) {
-                          policy == oracle_input_datum.bounty_token_policy_id
-                        },
-                      )
-                is {
-                  Some(_) -> True
-                  _ -> False
-                }
-              },
-            )
-          |> list.length()
-      ) == 1
-    name_check? && id_nft_check? && bounty_nft_check?
+    let bounty_nft_check = bounty_token_inputs_length == 1
+    name_check? && bounty_nft_check?
   }
 
   else(_) {
@@ -120,7 +86,7 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
         0,
         from_asset(
           mock_policy_id(1),
-          bytearray.concat(#"000643b0", "id")
+          cip68_100("id")
             |> concat(convert_int_to_bytes(10)),
           1,
         ),
@@ -132,7 +98,7 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
         0,
         from_asset(
           mock_policy_id(1),
-          bytearray.concat(#"000de140", "id")
+          cip68_222("id")
             |> concat(convert_int_to_bytes(10)),
           1,
         ),
@@ -163,7 +129,7 @@ test success_spend_identity_token() {
       },
     )
 
-  update_identity_token.spend(
+  id_ref_token_holder.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
@@ -183,7 +149,7 @@ test fail_spend_identity_token_with_wrong_name() fail {
       },
     )
 
-  update_identity_token.spend(
+  id_ref_token_holder.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
@@ -203,7 +169,7 @@ test fail_spend_identity_token_with_no_oracle() fail {
       },
     )
 
-  update_identity_token.spend(
+  id_ref_token_holder.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
@@ -223,7 +189,7 @@ test fail_spend_identity_token_with_no_id_nft() fail {
       },
     )
 
-  update_identity_token.spend(
+  id_ref_token_holder.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
@@ -243,7 +209,7 @@ test fail_spend_identity_token_with_no_bounty_nft() fail {
       },
     )
 
-  update_identity_token.spend(
+  id_ref_token_holder.spend(
     (mock_policy_id(2), "oracle"),
     None,
     "",
