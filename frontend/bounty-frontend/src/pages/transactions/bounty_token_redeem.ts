@@ -8,9 +8,9 @@ import {
   stringToHex,
   serializePlutusScript,
   mTuple,
-  // deserializeAddress,
-  ByteString,
   mConStr1,
+  deserializeAddress,
+  ByteString,
 } from "@meshsdk/core";
 import {
   getMultiSigTxApiRoute,
@@ -18,13 +18,13 @@ import {
   insertRedeemMultiSigApiRoute,
 } from "./api_common";
 import { ApiMiddleware } from "@/middleware/api";
-import { BountyDatum } from "../api/type";
+import { ContributerDatum, ContributionDatum } from "../api/type";
+import { Contribution } from "@/services/type";
 
 export const burnBountyToken = async (
   bounty_name: string,
-  issue_url: string,
-  reward: number,
   all_signatories: string[],
+  reward: number,
   wallet: IWallet
 ) => {
   if (!wallet) {
@@ -109,15 +109,6 @@ export const burnBountyToken = async (
     "Mesh"
   );
 
-  const bountyBoardScriptAddress = serializePlutusScript(
-    {
-      code: bountyBoardScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
-
   const bountyMintingPolicyId = resolveScriptHash(
     bountyMintingScriptCbor,
     "V3"
@@ -136,23 +127,43 @@ export const burnBountyToken = async (
     );
     const bountyResult = await getMultiSigTxApiRoute(bounty_name);
 
-    const converted_all_signatories: ByteString[] = all_signatories.map(
-      (item) => ({ bytes: item })
+    const pubKeyHashes: string[] = all_signatories.map(
+      (item) => deserializeAddress(item).pubKeyHash
     );
 
-    const bountyDatum: BountyDatum = {
+    const contributions: Contribution[] = idInfoResult.contributions;
+    contributions.push({ all_signatories: pubKeyHashes, reward: reward });
+
+    const contributionDatums: ContributionDatum[] = [];
+    contributions.forEach((item) => {
+      const pubKeyHashesByteString: ByteString[] = item.all_signatories.map(
+        (item) => ({ bytes: item })
+      );
+      const contributionDatum: ContributionDatum = {
+        constructor: 0,
+        fields: [
+          {
+            list: pubKeyHashesByteString,
+          },
+          {
+            int: item.reward,
+          },
+        ],
+      };
+      contributionDatums.push(contributionDatum);
+    });
+
+    const contributerDatumn: ContributerDatum = {
       constructor: 0,
       fields: [
         {
-          bytes: stringToHex(issue_url),
+          bytes: stringToHex(idInfoResult.gitHub),
         },
-        { int: reward },
         {
-          list: converted_all_signatories,
+          list: contributionDatums,
         },
       ],
     };
-
     const unsignedTx = await txBuilder
       .readOnlyTxInReference(
         oracleResult.oracleTxHash,
@@ -170,13 +181,6 @@ export const burnBountyToken = async (
       .mint("-1", bountyMintingPolicyId, stringToHex(bounty_name))
       .mintingScript(bountyMintingScriptCbor)
       .mintRedeemerValue(mConStr1([]))
-      .txOut(bountyBoardScriptAddress, [
-        {
-          unit: bountyMintingPolicyId + stringToHex(bounty_name),
-          quantity: "1",
-        },
-      ])
-      .txOutInlineDatumValue(bountyDatum, "JSON")
       .txOut(idSpendingScriptAddress, [
         {
           unit:
@@ -184,7 +188,7 @@ export const burnBountyToken = async (
           quantity: "1",
         },
       ])
-      .txOutInlineDatumValue(bountyDatum, "JSON")
+      .txOutInlineDatumValue(contributerDatumn, "JSON")
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,

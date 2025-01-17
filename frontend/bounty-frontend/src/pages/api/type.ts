@@ -2,7 +2,6 @@ import {
   ConStr0,
   Integer,
   PubKeyAddress,
-  Data,
   List,
   PubKeyHash,
   ByteString,
