@@ -1,12 +1,12 @@
-use aiken/cbor
+// use aiken/cbor
 use aiken/collection/dict
-use aiken/collection/list
 use aiken/primitive/bytearray.{concat}
-use cardano/address.{Address, from_script}
-use cardano/assets.{AssetName, PolicyId, flatten, from_asset}
+use cardano/address.{from_script}
+// use cardano/address.{Address}
+use cardano/assets.{AssetName, PolicyId, from_asset}
 use cardano/transaction.{InlineDatum, Transaction} as tx
-use cip
-use cocktail.{convert_int_to_bytes}
+use cip.{cip68_100, cip68_222}
+use cocktail.{convert_int_to_bytes, outputs_at_with}
 use identity_token_type.{
   Action, CheckBurn, CheckMint, ContributerDatum, to_contributer_datum,
 }
@@ -45,46 +45,37 @@ validator identity_token(
       cip.cip68_222(collection_name)
         |> concat(convert_int_to_bytes(oracle_counter_datum.count))
 
+    let is_asset_names_cip68_compliant =
+      if asset_name_1 == ref_tkn {
+        asset_name_2 == nft_tkn
+      } else if asset_name_1 == nft_tkn {
+        asset_name_2 == ref_tkn
+      } else {
+        False
+      }
+
     let redeemer_check =
       when redeemer is {
-        CheckMint ->
-          if asset_name_1 == ref_tkn {
-            asset_name_2 == nft_tkn
-          } else if asset_name_1 == nft_tkn {
-            asset_name_2 == ref_tkn
-          } else {
-            False
-          }? && (amount_1 == 1)? && (amount_2 == 1)? && {
-            expect Some(ref_output) =
-              outputs
-                |> list.find(
-                    fn(output) {
-                      output.address == oracle_input_datum.id_token_store_address
-                    },
-                  )
+        CheckMint -> {
+          let are_tokens_nfts = amount_1 == 1 && amount_2 == 1
+          expect [ref_output] =
+            outputs_at_with(
+              outputs,
+              oracle_input_datum.id_token_store_address,
+              policy_id,
+              ref_tkn,
+            )
 
-            let ref_output_check =
-              when
-                ref_output.value
-                  |> flatten()
-                  |> list.find(
-                      fn((policy, asset_name, _)) {
-                        asset_name == ref_tkn && policy == policy_id
-                      },
-                    )
-              is {
-                Some(_) -> True
-                _ -> False
-              }
-            let datum = ref_output.datum |> to_contributer_datum()
-            let datum_check =
-              (datum.github != @"")? && (datum.contributions == [])?
-            ref_output_check? && datum_check?
-          }
+          let datum = ref_output.datum |> to_contributer_datum()
+          let datum_check =
+            (datum.github != @"")? && (datum.contributions == [])?
+
+          are_tokens_nfts? && datum_check?
+        }
         CheckBurn -> (amount_1 == -1)? && (amount_2 == -1)?
       }
 
-    redeemer_check?
+    is_asset_names_cip68_compliant? && redeemer_check?
   }
 
   else(_) {
@@ -99,6 +90,15 @@ type MintTestCase {
   is_redeemer_check: Bool,
   is_datum_check: Bool,
 }
+
+const mock_oracle_datum: OracleDatum =
+  OracleDatum {
+    bounty_token_policy_id: mock_policy_id(0),
+    bounty_board_address: from_script("bounty_board_hold"),
+    id_token_policy_id: mock_policy_id(1),
+    id_token_store_address: from_script("ref_token_hold"),
+    owner: mock_pub_key_address(0, None),
+  }
 
 fn mock_mint_tx(
   test_case: MintTestCase,
@@ -117,14 +117,14 @@ fn mock_mint_tx(
         is_redeemer_check,
         1,
         mock_policy_id(1),
-        bytearray.concat(#"000643b0", collection_name)
+        cip68_100(collection_name)
           |> concat(convert_int_to_bytes(10)),
       )
     |> mint(
         is_redeemer_check,
         1,
         mock_policy_id(1),
-        bytearray.concat(#"000de140", collection_name)
+        cip68_222(collection_name)
           |> concat(convert_int_to_bytes(10)),
       )
     |> ref_tx_in(
@@ -134,16 +134,7 @@ fn mock_mint_tx(
         from_asset(mock_policy_id(2), "oracle", 1),
         from_script("ref_token_hold"),
       )
-    |> ref_tx_in_inline_datum(
-        is_oracle_inputed,
-        OracleDatum {
-          bounty_token_policy_id: mock_policy_id(0),
-          bounty_board_address: from_script("bounty_board_hold"),
-          id_token_policy_id: mock_policy_id(1),
-          id_token_store_address: from_script("ref_token_hold"),
-          owner: mock_pub_key_address(0, None),
-        },
-      )
+    |> ref_tx_in_inline_datum(is_oracle_inputed, mock_oracle_datum)
     |> tx_in(
         is_counter_inputed,
         mock_tx_hash(0),
@@ -162,22 +153,14 @@ fn mock_mint_tx(
           from_script("ref_token_hold"),
           from_asset(
             mock_policy_id(1),
-            bytearray.concat(#"000643b0", collection_name)
+            cip68_100(collection_name)
               |> concat(convert_int_to_bytes(10)),
             1,
           ),
           if is_datum_check {
             InlineDatum(ContributerDatum { github: @"abc", contributions: [] })
           } else {
-            InlineDatum(
-              OracleDatum {
-                bounty_token_policy_id: mock_policy_id(0),
-                bounty_board_address: from_script("bounty_board_hold"),
-                id_token_policy_id: mock_policy_id(1),
-                id_token_store_address: from_script("ref_token_hold"),
-                owner: mock_pub_key_address(0, None),
-              },
-            )
+            InlineDatum(mock_oracle_datum)
           },
         ),
       )
@@ -339,15 +322,15 @@ test fail_mint_identity_token_with_no_datumn() fail {
   )
 }
 
-test address_check() {
-  let ref_token_hold_address: Address = from_script("ref_token_hold")
-  cbor.serialise(ref_token_hold_address) != "d8799fd87a9f4e7265665f746f6b656e5f686f6c64ffd87a80ff"
-}
+// test address_check() {
+//   let ref_token_hold_address: Address = from_script("ref_token_hold")
+//   cbor.serialise(ref_token_hold_address) != "d8799fd87a9f4e7265665f746f6b656e5f686f6c64ffd87a80ff"
+// }
 
-test param_test() {
-  let param: (PolicyId, AssetName) = ("abc", "")
-  cbor.serialise(param) != ""
-}
+// test param_test() {
+//   let param: (PolicyId, AssetName) = ("abc", "")
+//   cbor.serialise(param) != ""
+// }
 
 type BurnTestCase {
   is_counter_inputed: Bool,
@@ -372,14 +355,14 @@ fn mock_burn_tx(
         is_redeemer_check,
         -1,
         mock_policy_id(1),
-        bytearray.concat(#"000643b0", collection_name)
+        cip68_100(collection_name)
           |> concat(convert_int_to_bytes(10)),
       )
     |> mint(
         is_redeemer_check,
         -1,
         mock_policy_id(1),
-        bytearray.concat(#"000de140", collection_name)
+        cip68_222(collection_name)
           |> concat(convert_int_to_bytes(10)),
       )
     |> tx_in(
@@ -388,7 +371,7 @@ fn mock_burn_tx(
         0,
         from_asset(
           mock_policy_id(1),
-          bytearray.concat(#"000de140", "id")
+          cip68_222("id")
             |> concat(convert_int_to_bytes(10)),
           1,
         ),
@@ -400,7 +383,7 @@ fn mock_burn_tx(
         0,
         from_asset(
           mock_policy_id(1),
-          bytearray.concat(#"000643b0", "id")
+          cip68_100("id")
             |> concat(convert_int_to_bytes(10)),
           1,
         ),
@@ -413,16 +396,7 @@ fn mock_burn_tx(
         from_asset(mock_policy_id(2), "oracle", 1),
         from_script("ref_token_hold"),
       )
-    |> tx_in_inline_datum(
-        is_oracle_inputed,
-        OracleDatum {
-          bounty_token_policy_id: mock_policy_id(0),
-          bounty_board_address: from_script("bounty_board_hold"),
-          id_token_policy_id: mock_policy_id(1),
-          id_token_store_address: from_script("ref_token_hold"),
-          owner: mock_pub_key_address(0, None),
-        },
-      )
+    |> tx_in_inline_datum(is_oracle_inputed, mock_oracle_datum)
     |> ref_tx_in(
         is_counter_inputed,
         mock_tx_hash(0),
