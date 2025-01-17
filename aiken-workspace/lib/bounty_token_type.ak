@@ -25,7 +25,7 @@ test bounty_datum() {
       issue_url: "abc@gmail.com",
       reward: 123,
       all_signatories: [
-        "91f740da89f81ef5e99264e2c482f96be96ceab7f9e47907f414db9b",
+        #"91f740da89f81ef5e99264e2c482f96be96ceab7f9e47907f414db9b",
       ],
     }
   cbor.serialise(datum) == #"d8799f43616263d8799fd87a9f43616263ffd87a80ff43646566d8799fd87a9f43646566ffd87a80ffff"

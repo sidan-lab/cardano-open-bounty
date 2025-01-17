@@ -3,14 +3,14 @@ use aiken/primitive/bytearray.{concat}
 use cardano/address.{from_script}
 use cardano/assets.{AssetName, PolicyId, flatten, from_asset, without_lovelace}
 use cardano/transaction.{OutputReference, Transaction} as tx
-use cip.{cip68_100_prefix, cip68_222, cip68_222_prefix}
-use cocktail/vodka_converter.{convert_int_to_bytes}
+use cip.{cip68_222}
+use cocktail.{convert_int_to_bytes}
 use identity_token_type.{ContributerDatum}
 use mocktail.{
-  complete, mock_pub_key_address, mock_script_address, mock_tx_hash, mocktail_tx,
-  ref_tx_in, ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
+  complete, mock_policy_id, mock_pub_key_address, mock_script_address,
+  mock_tx_hash, mocktail_tx, ref_tx_in, ref_tx_in_inline_datum, tx_in,
+  tx_in_inline_datum,
 }
-use mocktail/virgin_key_hash.{mock_policy_id}
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
@@ -18,7 +18,7 @@ validator update_identity_token(oracle_nft: (PolicyId, AssetName)) {
   spend(_d, _r, own_ref: OutputReference, transaction: Transaction) {
     let Transaction { inputs, reference_inputs, .. } = transaction
 
-    expect oracle_input_datum: OracleDatum =
+    let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
     expect Some(own_input) =
       inputs |> list.find(fn(input) { input.output_reference == own_ref })

@@ -1,4 +1,3 @@
-use aiken/cbor
 use aiken/collection/dict
 use aiken/collection/list
 use cardano/assets.{PolicyId, add, from_asset, from_lovelace}

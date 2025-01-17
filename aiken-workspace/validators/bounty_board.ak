@@ -8,14 +8,13 @@ use cardano/assets.{
   quantity_of,
 }
 use cardano/transaction.{InlineDatum, OutputReference, Transaction} as tx
-use cocktail/vodka_converter.{convert_int_to_bytes}
-use cocktail/vodka_mints.{only_minted_token}
+use cocktail.{convert_int_to_bytes, only_minted_token}
 use mocktail.{
-  add_extra_signatory, add_output, complete, mock_pub_key_address,
-  mock_pub_key_hash, mock_script_address, mock_script_output, mock_tx_hash,
-  mocktail_tx, ref_tx_in, ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
+  add_extra_signatory, add_output, complete, mock_policy_id,
+  mock_pub_key_address, mock_pub_key_hash, mock_script_address,
+  mock_script_output, mock_tx_hash, mocktail_tx, ref_tx_in,
+  ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
 }
-use mocktail/virgin_key_hash.{mock_policy_id}
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
@@ -41,7 +40,7 @@ validator bounty_board(oracle_nft: (PolicyId, AssetName)) {
     } = transaction
     let input_check = list.length(inputs) == 1
 
-    expect oracle_input_datum: OracleDatum =
+    let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
     expect Some(own_input) =
       inputs |> list.find(fn(input) { input.output_reference == own_ref })
@@ -54,7 +53,7 @@ validator bounty_board(oracle_nft: (PolicyId, AssetName)) {
           let signatories_check =
             has_all_signers(old_bounty_datum.all_signatories, extra_signatories)
 
-          expect Some(bounty_nft_output) =
+          expect Some(_) =
             outputs
               |> list.find(
                   fn(output) {

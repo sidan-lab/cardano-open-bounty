@@ -5,17 +5,16 @@ use aiken/primitive/bytearray.{concat}
 use cardano/address.{Address, from_script}
 use cardano/assets.{AssetName, PolicyId, flatten, from_asset}
 use cardano/transaction.{InlineDatum, Transaction} as tx
-use cip.{cip68_100, cip68_222}
-use cocktail/vodka_converter.{convert_int_to_bytes}
+use cip
+use cocktail.{convert_int_to_bytes}
 use identity_token_type.{
   Action, CheckBurn, CheckMint, ContributerDatum, to_contributer_datum,
 }
 use mocktail.{
-  add_output, complete, mint, mock_pub_key_address, mock_tx_hash, mocktail_tx,
-  ref_tx_in, ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
+  add_output, complete, mint, mock_policy_id, mock_pub_key_address,
+  mock_script_output, mock_tx_hash, mocktail_tx, ref_tx_in,
+  ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
 }
-use mocktail/virgin_key_hash.{mock_policy_id}
-use mocktail/virgin_outputs.{mock_script_output}
 use oracle_token_type.{OracleCounterDatum, OracleDatum}
 use oracle_token_util.{get_oracle_counter_datum, get_oracle_nft_datum}
 
@@ -28,10 +27,10 @@ validator identity_token(
     let Transaction { mint, outputs, reference_inputs, inputs, .. } =
       transaction
 
-    expect oracle_input_datum: OracleDatum =
+    let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
 
-    expect oracle_counter_datum: OracleCounterDatum =
+    let oracle_counter_datum: OracleCounterDatum =
       inputs |> get_oracle_counter_datum(oracle_counter)
 
     expect [Pair(asset_name_1, amount_1),

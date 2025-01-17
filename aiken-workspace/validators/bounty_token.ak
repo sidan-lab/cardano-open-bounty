@@ -11,7 +11,7 @@ use cardano/assets.{
   quantity_of, without_lovelace,
 }
 use cardano/transaction.{InlineDatum, Input, Transaction} as tx
-use cip.{cip68_100, cip68_100_prefix, cip68_222, cip68_222_prefix}
+use cip.{cip68_100_prefix, cip68_222_prefix}
 use identity_token_type.{ContributerDatum, Contribution, to_contributer_datum}
 use mocktail.{
   MocktailTx, add_extra_signatory, add_output, complete, mint,
