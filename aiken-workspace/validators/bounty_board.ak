@@ -25,7 +25,7 @@ pub type BountyBoradRedeemer {
 
 validator bounty_board(oracle_nft: (PolicyId, AssetName)) {
   spend(
-    _d,
+    _datum,
     redeemer: BountyBoradRedeemer,
     own_ref: OutputReference,
     transaction: Transaction,

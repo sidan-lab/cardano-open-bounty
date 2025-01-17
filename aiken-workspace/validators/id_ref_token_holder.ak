@@ -17,7 +17,7 @@ use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
 validator id_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
-  spend(_d, _r, input: OutputReference, transaction: Transaction) {
+  spend(_datum, _redeemer, input: OutputReference, transaction: Transaction) {
     let Transaction { inputs, reference_inputs, .. } = transaction
 
     let oracle_input_datum: OracleDatum =
