@@ -9,14 +9,12 @@ import {
   serializePlutusScript,
   mTuple,
   // deserializeAddress,
-  mConStr0,
   ByteString,
   mConStr1,
 } from "@meshsdk/core";
 import {
   getMultiSigTxApiRoute,
   getUtxoApiRoute,
-  insertMultiSigApiRoute,
   insertRedeemMultiSigApiRoute,
 } from "./api_common";
 import { ApiMiddleware } from "@/middleware/api";
@@ -55,6 +53,39 @@ export const burnBountyToken = async (
   const collateral = (await wallet.getCollateral())[0];
   // const usedAddress = (await wallet.getUsedAddresses())[0];
   // const { pubKeyHash } = deserializeAddress(usedAddress);
+  const idMintingScriptCbor = applyParamsToScript(
+    blueprint.validators[5]!.compiledCode,
+    [
+      stringToHex(`${process.env.NEXT_PUBLIC_COLLECTION_NAME!}`),
+      mTuple(
+        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
+        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
+      ),
+      process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_POLICY_ID!,
+    ],
+    "Mesh"
+  );
+  const idMintingPolicyId = resolveScriptHash(idMintingScriptCbor, "V3");
+
+  const idSpendingScriptCbor = applyParamsToScript(
+    blueprint.validators[7]!.compiledCode,
+    [
+      mTuple(
+        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
+        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
+      ),
+    ],
+    "Mesh"
+  );
+
+  const idSpendingScriptAddress = serializePlutusScript(
+    {
+      code: idSpendingScriptCbor,
+      version: "V3",
+    },
+    undefined,
+    0
+  ).address;
 
   const bountyBoardScriptCbor = applyParamsToScript(
     blueprint.validators[1]!.compiledCode,
@@ -94,6 +125,7 @@ export const burnBountyToken = async (
   const api = new ApiMiddleware(wallet);
   try {
     const idNftTxResult = await api.getIdNftTx();
+    const getIdRefTokenResult = await api.getIdRefToken();
     const idRefTxResult = await api.getIdRefTx();
     const idInfoResult = await api.getIdInfo(
       idRefTxResult.txHash,
@@ -128,11 +160,11 @@ export const burnBountyToken = async (
       )
       .txIn(idNftTxResult.txHash, idNftTxResult.index)
       .txIn(idRefTxResult.txHash, idRefTxResult.index)
-      .txInScript()
+      .txInScript(idSpendingScriptCbor)
       .txInInlineDatumPresent()
       .txIn(bountyResult.txHash, bountyResult.outputIndex)
       .txInRedeemerValue(mConStr1([]))
-      .txInScript()
+      .txInScript(bountyBoardScriptCbor)
       .txInInlineDatumPresent()
       .mintPlutusScriptV3()
       .mint("-1", bountyMintingPolicyId, stringToHex(bounty_name))
@@ -141,6 +173,14 @@ export const burnBountyToken = async (
       .txOut(bountyBoardScriptAddress, [
         {
           unit: bountyMintingPolicyId + stringToHex(bounty_name),
+          quantity: "1",
+        },
+      ])
+      .txOutInlineDatumValue(bountyDatum, "JSON")
+      .txOut(idSpendingScriptAddress, [
+        {
+          unit:
+            idMintingPolicyId + stringToHex(getIdRefTokenResult.refAssetName),
           quantity: "1",
         },
       ])

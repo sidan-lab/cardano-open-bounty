@@ -18,6 +18,22 @@ export class ApiMiddleware {
     }
   };
 
+  getIdRefToken = async (): Promise<{
+    policyId: string;
+    refAssetName: string;
+  }> => {
+    try {
+      const { policyId, assetName } = await this.wallet.getIdToken();
+
+      const refAssetName = CIP68_100(assetName.slice(3));
+
+      return { policyId, refAssetName };
+    } catch (error) {
+      console.error("Error getting id tx :", error);
+      throw error;
+    }
+  };
+
   getIdNftTx = async (): Promise<{
     txHash: string;
     index: number;

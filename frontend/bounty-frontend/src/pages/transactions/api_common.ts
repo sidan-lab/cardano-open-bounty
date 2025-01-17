@@ -92,7 +92,8 @@ export const updateMultiSigApiRoute = async (
 };
 
 export const getMultiSigApiRoute = async (
-  bountyName: string
+  bountyName: string,
+  contributor: string
 ): Promise<{ signedTx: string; requiredSigner: string[] }> => {
   const config = {
     headers: {
@@ -104,6 +105,7 @@ export const getMultiSigApiRoute = async (
     "../api/post/get_multisig",
     JSON.stringify({
       bountyName: bountyName,
+      contributor: contributor,
     }),
     config
   );

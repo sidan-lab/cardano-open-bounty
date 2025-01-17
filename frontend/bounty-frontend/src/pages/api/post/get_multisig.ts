@@ -7,11 +7,11 @@ export default async function handler(
 ) {
   if (req.method === "POST") {
     try {
-      const { bountyName } = req.body;
+      const { bountyName, contributor } = req.body;
       const sql = neon(process.env.DATABASE_URL!);
       const queryResult = await sql(
-        "SELECT signedTx, requiredSigner FROM bounty_multi_signature WHERE bountyName = $1",
-        [bountyName]
+        "SELECT signedTx, requiredSigner FROM bounty_multi_signature WHERE bountyName = $1 AND contributor= $2",
+        [bountyName, contributor]
       );
 
       if (queryResult.length > 0) {
