@@ -96,16 +96,16 @@ const BountyTable: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [hasIDToken, setHasIDToken] = useState(false);
-  
+
   useEffect(() => {
-      const checkIDTokenOwnership = async () => {
-        const hasId = await api.findIdtoken();
-        setHasIDToken(hasId.hasIdToken);
-      };
-      if (connected) {
-        checkIDTokenOwnership();
-      }
-    }, [connected, wallet]);
+    const checkIDTokenOwnership = async () => {
+      const hasId = await api.findIdtoken();
+      setHasIDToken(hasId.hasIdToken);
+    };
+    if (connected) {
+      checkIDTokenOwnership();
+    }
+  }, [connected, wallet]);
 
   const handleCreateBounty = (newBounty: Bounty) => {
     setBounties((prevState) => [...prevState, newBounty]);
@@ -141,7 +141,7 @@ const BountyTable: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-4xl font-bold dark:text-white">Bounty Board</h2>
         <div className="flex space-x-2">
-          <CreateIDToken />
+          {!hasIDToken && <CreateIDToken />}
           {connected && hasIDToken && (
             <CreateBountyToken onCreateBounty={handleCreateBounty} />
           )}
