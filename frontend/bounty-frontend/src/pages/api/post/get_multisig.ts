@@ -15,8 +15,11 @@ export default async function handler(
       );
 
       if (queryResult.length > 0) {
-        const { signedTx: signedTx, requiredSigner: requiredSigner } =
+        const { signedTx: signedTx, requiredSigner: requiredSignersJSON } =
           queryResult[0];
+
+        const requiredSigner = JSON.parse(requiredSignersJSON);
+
         res.status(200).json({ signedTx, requiredSigner });
       } else {
         res.status(404).json({ message: "Data not found" });

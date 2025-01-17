@@ -65,3 +65,84 @@ export const insertUtxoApiRoute = async (
   );
   console.log("insert utxo res", res.data);
 };
+
+export const updateMultiSigApiRoute = async (
+  bountyName: string,
+  updatedSignedTx: string,
+  updatedRequiredSigner: string[]
+) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/update_multisig",
+    JSON.stringify({
+      bountyName: bountyName,
+      updatedSignedTx: updatedSignedTx,
+      updatedRequiredSigner: updatedRequiredSigner,
+    }),
+    config
+  );
+  console.log("update multisig res", res.data);
+};
+
+export const getMultiSigApiRoute = async (
+  bountyName: string
+): Promise<{ signedTx: string; requiredSigner: string[] }> => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/get_multisig",
+    JSON.stringify({
+      bountyName: bountyName,
+    }),
+    config
+  );
+  const { signedTx, requiredSigner } = res.data;
+  return { signedTx, requiredSigner };
+};
+
+export const insertMultiSigApiRoute = async (
+  bountyName: string,
+  requiredSigner: string[]
+) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/insert_multisig",
+    JSON.stringify({
+      bountyName: bountyName,
+      requiredSigner: requiredSigner,
+    }),
+    config
+  );
+  console.log("insert multisig res", res.data);
+};
+
+export const deleteMultiSigApiRoute = async (bountyName: string) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/delete_multisig",
+    JSON.stringify({
+      bountyName: bountyName,
+    }),
+    config
+  );
+  console.log("delete multisig res", res.data);
+};

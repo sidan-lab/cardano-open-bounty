@@ -9,9 +9,12 @@ export default async function handler(
     try {
       const { bountyName, requiredSigner } = req.body;
       const sql = neon(process.env.DATABASE_URL!);
+
+      const requiredSignersJSON = JSON.stringify(requiredSigner);
+
       await sql(
         "INSERT INTO bounty_multi_signature (bountyName, requiredSigner) VALUES ($1, $2);",
-        [bountyName, requiredSigner]
+        [bountyName, requiredSignersJSON]
       );
 
       res.status(200).json({ message: "Data inserted successfully" });

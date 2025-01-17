@@ -7,11 +7,14 @@ export default async function handler(
 ) {
   if (req.method === "POST") {
     try {
-      const { bountyName, signedTx, requiredSigner } = req.body;
+      const { bountyName, updatedSignedTx, updatedRequiredSigner } = req.body;
       const sql = neon(process.env.DATABASE_URL!);
+
+      const requiredSignersJSON = JSON.stringify(updatedRequiredSigner);
+
       await sql(
         "UPDATE bounty_multi_signature SET signedTx = $1, requiredSigner = $2 WHERE bountyName = $3",
-        [signedTx, requiredSigner, bountyName]
+        [updatedSignedTx, requiredSignersJSON, bountyName]
       );
 
       res.status(200).json({ message: "Data updated successfully" });
