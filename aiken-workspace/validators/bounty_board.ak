@@ -5,15 +5,16 @@ use bounty_token_util.{has_all_signers}
 use cardano/address.{from_script}
 use cardano/assets.{
   AssetName, PolicyId, from_asset, from_lovelace, lovelace_of, merge,
-  quantity_of,
 }
-use cardano/transaction.{InlineDatum, OutputReference, Transaction} as tx
-use cocktail.{convert_int_to_bytes, only_minted_token}
+use cardano/transaction.{InlineDatum,
+  OutputReference, Transaction, find_input} as tx
+use cip.{cip68_222}
+use cocktail.{convert_int_to_bytes, only_minted_token, outputs_at_with}
+use cocktail/vodka_inputs.{inputs_at}
 use mocktail.{
   add_extra_signatory, add_output, complete, mock_policy_id,
-  mock_pub_key_address, mock_pub_key_hash, mock_script_address,
-  mock_script_output, mock_tx_hash, mocktail_tx, ref_tx_in,
-  ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
+  mock_pub_key_address, mock_pub_key_hash, mock_script_output, mock_tx_hash,
+  mocktail_tx, ref_tx_in, ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
 }
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
@@ -27,7 +28,7 @@ validator bounty_board(oracle_nft: (PolicyId, AssetName)) {
   spend(
     _datum,
     redeemer: BountyBoradRedeemer,
-    own_ref: OutputReference,
+    input: OutputReference,
     transaction: Transaction,
   ) {
     let Transaction {
@@ -38,55 +39,45 @@ validator bounty_board(oracle_nft: (PolicyId, AssetName)) {
       extra_signatories,
       ..
     } = transaction
-    let input_check = list.length(inputs) == 1
 
     let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
-    expect Some(own_input) =
-      inputs |> list.find(fn(input) { input.output_reference == own_ref })
 
-    let redeemer_check =
-      when redeemer is {
-        UpdateBounty -> {
-          let old_bounty_datum: BountyDatum =
-            own_input.output.datum |> to_bounty_datum()
-          let signatories_check =
-            has_all_signers(old_bounty_datum.all_signatories, extra_signatories)
+    expect Some(own_input) = find_input(inputs, input)
+    let script_inputs =
+      inputs_at(inputs, own_input.output.address) |> list.length()
 
-          expect Some(_) =
-            outputs
-              |> list.find(
-                  fn(output) {
-                    let address_check =
-                      (output.address == oracle_input_datum.bounty_board_address)?
+    let is_only_one_script_input = script_inputs == 1
 
-                    let datum = output.datum |> to_bounty_datum()
-                    let datum_check =
-                      (lovelace_of(output.value) >= datum.reward)?
-                    let bounty_token_check =
-                      (
-                        output.value
-                          |> quantity_of(
-                              oracle_input_datum.bounty_token_policy_id,
-                              "",
-                            )
-                      ) == 1
-                    address_check && datum_check && bounty_token_check
-                  },
-                )
+    when redeemer is {
+      UpdateBounty -> {
+        let old_bounty_datum: BountyDatum =
+          own_input.output.datum |> to_bounty_datum()
+        let signatories_check =
+          has_all_signers(old_bounty_datum.all_signatories, extra_signatories)
 
-          signatories_check?
-        }
-        RedeemBounty ->
-          only_minted_token(
-            mint,
+        expect [bounty_board_output] =
+          outputs_at_with(
+            outputs,
+            oracle_input_datum.bounty_board_address,
             oracle_input_datum.bounty_token_policy_id,
             "",
-            -1,
           )
-      }
 
-    input_check? && redeemer_check?
+        let datum = bounty_board_output.datum |> to_bounty_datum()
+        let datum_check =
+          (lovelace_of(bounty_board_output.value) >= datum.reward)?
+        is_only_one_script_input? && signatories_check? && datum_check
+      }
+      RedeemBounty ->
+        // is_only_one_script_input? &&
+        only_minted_token(
+          mint,
+          oracle_input_datum.bounty_token_policy_id,
+          "",
+          -1,
+        )
+    }
   }
 
   else(_) {
@@ -150,11 +141,11 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
         0,
         from_asset(
           mock_policy_id(1),
-          bytearray.concat(#"000de140", "id")
+          cip68_222("id")
             |> concat(convert_int_to_bytes(10)),
           1,
         ),
-        mock_script_address(0, None),
+        from_script("bounty_board_hold"),
       )
     |> complete()
     |> add_extra_signatory(is_signatories_check, mock_pub_key_hash(0))
@@ -224,7 +215,7 @@ test fail_update_bounty_board_with_no_oracle() fail {
   )
 }
 
-test fail_update_bounty_board_with_two_inputs() fail {
+test fail_update_bounty_board_with_two_script_inputs() fail {
   let tx =
     mock_spend_tx(
       SpendTestCase {
