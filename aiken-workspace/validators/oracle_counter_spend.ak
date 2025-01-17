@@ -1,11 +1,10 @@
-use aiken/collection/list
-use cardano/assets.{add, flatten, from_asset}
+use cardano/assets.{add, from_asset}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, find_input,
 }
 use cocktail.{
   address_payment_key, inputs_at_with_policy, key_signed, only_minted_token,
-  outputs_at_with_policy,
+  outputs_at_with_policy, value_length, value_tokens,
 }
 use mocktail.{
   complete, mint, mock_policy_id, mock_pub_key_address, mock_pub_key_hash,
@@ -24,8 +23,7 @@ validator oracle_counter {
     let Transaction { mint, inputs, outputs, extra_signatories, .. } = tx
     expect Some(OracleCounterDatum { count, owner }) = datum_opt
     expect Some(own_input) = find_input(inputs, input)
-    expect [(oracle_nft_policy, _, _)] =
-      list.filter(flatten(own_input.output.value), fn(x) { x.1st != "" })
+    expect [(oracle_nft_policy, _, _)] = value_tokens(own_input.output.value)
     let own_address = own_input.output.address
     let owner_key = address_payment_key(owner)
     let is_owner_signed = key_signed(extra_signatories, owner_key)
@@ -37,7 +35,7 @@ validator oracle_counter {
       )
     is {
       (MintNFT, [_], [only_output]) -> {
-        let is_output_value_clean = list.length(flatten(only_output.value)) == 2
+        let is_output_value_clean = value_length(only_output.value) == 2
         let is_count_updated =
           only_output.datum == InlineDatum(
             OracleCounterDatum { count: count + 1, owner },
@@ -64,6 +62,9 @@ type MintTestCase {
   is_count_updated: Bool,
 }
 
+const mock_oracle_datum =
+  OracleCounterDatum { count: 0, owner: mock_pub_key_address(0, None) }
+
 fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
   let MintTestCase { is_oracle_output_clean, is_count_updated } = test_case
 
@@ -72,10 +73,7 @@ fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
 
   mocktail_tx()
     |> tx_in(True, mock_tx_hash(0), 0, input_value, mock_script_address(0, None))
-    |> tx_in_inline_datum(
-        True,
-        OracleCounterDatum { count: 0, owner: mock_pub_key_address(0, None) },
-      )
+    |> tx_in_inline_datum(True, mock_oracle_datum)
     |> tx_out(is_oracle_output_clean, mock_script_address(0, None), input_value)
     |> tx_out(
         !is_oracle_output_clean,
@@ -99,8 +97,7 @@ fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
 }
 
 test success_mint() {
-  let datum =
-    OracleCounterDatum { count: 0, owner: mock_pub_key_address(0, None) }
+  let datum = mock_oracle_datum
 
   let redeemer = MintNFT
   let tx =
@@ -112,8 +109,7 @@ test success_mint() {
 }
 
 test fail_mint_with_unclean_output() {
-  let datum =
-    OracleCounterDatum { count: 0, owner: mock_pub_key_address(0, None) }
+  let datum = mock_oracle_datum
   let redeemer = MintNFT
 
   let tx =
@@ -125,8 +121,7 @@ test fail_mint_with_unclean_output() {
 }
 
 test fail_mint_without_count_updated() {
-  let datum =
-    OracleCounterDatum { count: 0, owner: mock_pub_key_address(0, None) }
+  let datum = mock_oracle_datum
   let redeemer = MintNFT
 
   let tx =
@@ -148,18 +143,14 @@ fn mock_stop_oracle_tx(test_case: StopOracleTestCase) -> Transaction {
 
   mocktail_tx()
     |> tx_in(True, mock_tx_hash(0), 0, input_value, mock_script_address(0, None))
-    |> tx_in_inline_datum(
-        True,
-        OracleCounterDatum { count: 0, owner: mock_pub_key_address(0, None) },
-      )
+    |> tx_in_inline_datum(True, mock_oracle_datum)
     |> mint(is_oracle_nft_burnt, -1, mock_policy_id(0), "")
     |> required_signer_hash(True, mock_pub_key_hash(0))
     |> complete()
 }
 
 test success_stop() {
-  let datum =
-    OracleCounterDatum { count: 0, owner: mock_pub_key_address(0, None) }
+  let datum = mock_oracle_datum
   let redeemer = StopOracle
   let tx = mock_stop_oracle_tx(StopOracleTestCase { is_oracle_nft_burnt: True })
 
@@ -167,8 +158,7 @@ test success_stop() {
 }
 
 test fail_stop_with_oracle_nft_not_burnt() {
-  let datum =
-    OracleCounterDatum { count: 0, owner: mock_pub_key_address(0, None) }
+  let datum = mock_oracle_datum
 
   let redeemer = StopOracle
 
