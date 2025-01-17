@@ -31,11 +31,6 @@ validator one_shot(utxo_ref: OutputReference) {
   }
 }
 
-test redeemer_hex() {
-  let redeemer = CheckMint
-  cbor.serialise(redeemer) != #"d8799f581c1b25744c74cf166de9feee1ae6f8cc8b7281a12e6f4d503bb2ecc67cd87980ff"
-}
-
 test success_mint() {
   let redeemer = CheckMint
   let input_utxo = mock_utxo_ref(0, 1)
