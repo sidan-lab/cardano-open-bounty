@@ -6,17 +6,18 @@ import {
   MeshTxBuilder,
   resolveScriptHash,
   stringToHex,
-  applyCborEncoding,
   serializePlutusScript,
   mTuple,
   // deserializeAddress,
   mConStr0,
+  ByteString,
 } from "@meshsdk/core";
 import { getUtxoApiRoute } from "./api_common";
 import { ApiMiddleware } from "@/middleware/api";
 import { BountyDatum } from "../api/type";
 
-export const mintIdToken = async (
+export const mintBountyToken = async (
+  bounty_name: string,
   issue_url: string,
   reward: number,
   all_signatories: string[],
@@ -91,6 +92,10 @@ export const mintIdToken = async (
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
     );
 
+    const converted_all_signatories: ByteString[] = all_signatories.map(
+      (item) => ({ bytes: item })
+    );
+
     const bountyDatum: BountyDatum = {
       constructor: 0,
       fields: [
@@ -99,7 +104,7 @@ export const mintIdToken = async (
         },
         { int: reward },
         {
-          list: all_signatories,
+          list: converted_all_signatories,
         },
       ],
     };
@@ -109,19 +114,14 @@ export const mintIdToken = async (
         oracleResult.oracleTxHash,
         oracleResult.oracleOutputIndex
       )
-      .readOnlyTxInReference(idTxResult.txHash, idTxResult.index)
+      .txIn(idTxResult.txHash, idTxResult.index)
       .mintPlutusScriptV3()
-      .mint(
-        "1",
-        bountyMintingPolicyId,
-
-        stringToHex("aaa")
-      )
+      .mint("1", bountyMintingPolicyId, stringToHex(bounty_name))
       .mintingScript(bountyMintingScriptCbor)
       .mintRedeemerValue(mConStr0([]))
       .txOut(bountyBoardScriptAddress, [
         {
-          unit: bountyMintingPolicyId + stringToHex("aaa"),
+          unit: bountyMintingPolicyId + stringToHex(bounty_name),
           quantity: "1",
         },
       ])
