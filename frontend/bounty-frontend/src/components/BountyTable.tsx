@@ -4,10 +4,12 @@ import { useWallet } from "@meshsdk/react";
 import CreateIDToken from "./CreateIDToken";
 import SearchBars from "./SearchBar";
 import { ApiMiddleware } from "@/middleware/api";
+import Contribute from "./Contribute";
 interface Bounty {
   name: string;
   tasks: string;
   reward: string;
+  required_signatories: string[];
 }
 
 const BountyTable: React.FC = () => {
@@ -19,79 +21,98 @@ const BountyTable: React.FC = () => {
       name: "Project-A: Fix Bugs",
       tasks: "https://example.com/task1",
       reward: "50 ADA",
+      required_signatories: ["signatory1", "signatory2"],
     },
     {
       name: "Project-A: Develop Feature X",
       tasks: "https://example.com/task2",
       reward: "75 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-A: Update Documentation",
       tasks: "https://example.com/task3",
       reward: "20 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-B: Conduct Security Audit",
       tasks: "https://example.com/task4",
       reward: "100 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-C: Design UI Mockup",
       tasks: "https://example.com/task5",
       reward: "30 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-D: Create Marketing Plan",
       tasks: "https://example.com/task6",
       reward: "60 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-D: Analyze User Feedback",
       tasks: "https://example.com/task7",
       reward: "40 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-E: Optimize Performance",
       tasks: "https://example.com/task8",
       reward: "80 ADA",
+      required_signatories: ["signatory1"],
     },
     {
       name: "Project-F: Setup Continuous Integration",
       tasks: "https://example.com/task9",
       reward: "70 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-G: Develop API Endpoints",
       tasks: "https://example.com/task10",
       reward: "90 ADA",
+      required_signatories: [
+        "signatory1",
+        "signatory2",
+        "signatory3",
+        "signtory4",
+      ],
     },
     {
       name: "Project-H: Migrate Database",
       tasks: "https://example.com/task11",
       reward: "110 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-I: Create User Stories",
       tasks: "https://example.com/task12",
       reward: "55 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-J: Write Unit Tests",
       tasks: "https://example.com/task13",
       reward: "65 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
     {
       name: "Project-K: Conduct Market Research",
       tasks: "https://example.com/task14",
       reward: "95 ADA",
+      required_signatories: ["signatory1", "signatory2"],
     },
     {
       name: "Project-L: Implement Security Measures",
       tasks: "https://example.com/task15",
       reward: "125 ADA",
+      required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
   ]);
-
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -121,7 +142,8 @@ const BountyTable: React.FC = () => {
   const filteredBounties = bounties.filter(
     (bounty) =>
       bounty.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bounty.tasks.toLowerCase().includes(searchQuery.toLowerCase())
+      bounty.tasks.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bounty.reward.includes(searchQuery)
   );
 
   const totalPages = Math.ceil(filteredBounties.length / rowsPerPage);
@@ -142,9 +164,9 @@ const BountyTable: React.FC = () => {
         <h2 className="text-4xl font-bold dark:text-white">Bounty Board</h2>
         <div className="flex space-x-2">
           {!hasIDToken && <CreateIDToken />}
-          {connected && hasIDToken && (
+          
             <CreateBountyToken onCreateBounty={handleCreateBounty} />
-          )}
+          
         </div>
       </div>
 
@@ -217,27 +239,7 @@ const BountyTable: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 text-white">{bounty.reward}</td>
                 <td className="px-6 py-4">
-                  <button
-                    type="button"
-                    className="text-white bg-text-white bg-gray-800 hover:bg-[#050708]/80 focus:ring-4 focus:outline-none focus:ring-[#050708]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:hover:bg-[#050708]/40 dark:focus:ring-gray-600 me-2 mb-2"
-                  >
-                    <svg
-                      width="32"
-                      height="32"
-                      clip-rule="evenodd"
-                      fill-rule="evenodd"
-                      stroke-linejoin="round"
-                      stroke-miterlimit="2"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="m21 4.009c0-.478-.379-1-1-1h-16c-.62 0-1 .519-1 1v16c0 .621.52 1 1 1h16c.478 0 1-.379 1-1zm-16.5.5h15v15h-15zm2.449 7.882 3.851 3.43c.142.128.321.19.499.19.202 0 .405-.081.552-.242l5.953-6.509c.131-.143.196-.323.196-.502 0-.41-.331-.747-.748-.747-.204 0-.405.082-.554.243l-5.453 5.962-3.298-2.938c-.144-.127-.321-.19-.499-.19-.415 0-.748.335-.748.746 0 .205.084.409.249.557z"
-                        fill="#FFFFFF"
-                      />
-                    </svg>
-                    Contribute
-                  </button>
+                  <Contribute bounty={bounty}></Contribute>
                 </td>
               </tr>
             ))
@@ -247,7 +249,6 @@ const BountyTable: React.FC = () => {
 
       <div className="mt-4 flex items-center justify-center">
         {" "}
-        {/* Centering the pagination controls */}
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setCurrentPage((curr) => Math.max(1, curr - 1))}

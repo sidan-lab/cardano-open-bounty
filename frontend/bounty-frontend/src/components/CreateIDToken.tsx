@@ -50,9 +50,24 @@ const CreateIDToken: React.FC = () => {
         </button>
       )}
 
-      { showMintPrompt && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg z-50 w-1/3">
+      {showMintPrompt && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-1/3">
+            <svg
+              className="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 20 20"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
+            </svg>
             <h2 className="text-lg font-bold text-gray-300">
               No ID Token Found
             </h2>
@@ -78,8 +93,8 @@ const CreateIDToken: React.FC = () => {
       )}
 
       {formVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300">
-          <div className="bg-gray-800 p-8 rounded-lg shadow-lg z-50 w-1/3 transform transition-all duration-300 ease-in-out scale-100">
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300 backdrop-blur z-50">
+          <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-1/3 transform transition-all duration-300 ease-in-out scale-100">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-300">Mint ID Token</h2>
               <button

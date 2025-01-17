@@ -19,7 +19,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearchChange }) => {
     <form onChange={handleSearch} className="max-w-md mx-auto">
       <label
         htmlFor="default-search"
-        className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
+        className="fixed mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
       >
         Search
       </label>
