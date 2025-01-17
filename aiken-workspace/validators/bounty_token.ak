@@ -8,10 +8,12 @@ use bounty_token_util.{has_all_signers}
 use cardano/address.{from_script}
 use cardano/assets.{
   AssetName, PolicyId, flatten, from_asset, from_lovelace, lovelace_of, merge,
-  quantity_of, without_lovelace,
+  without_lovelace,
 }
 use cardano/transaction.{InlineDatum, Input, Transaction} as tx
 use cip.{cip68_100_prefix, cip68_222_prefix}
+use cocktail.{outputs_at_with}
+use cocktail/vodka_inputs.{inputs_with_policy}
 use identity_token_type.{ContributerDatum, Contribution, to_contributer_datum}
 use mocktail.{
   MocktailTx, add_extra_signatory, add_output, complete, mint, mock_policy_id,
@@ -45,43 +47,23 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
     let redeemer_check =
       when redeemer is {
         CheckMint -> {
-          expect Some(_bounty_nft_output) =
-            outputs
-              |> list.find(
-                  fn(output) {
-                    let address_check =
-                      (output.address == oracle_input_datum.bounty_board_address)?
+          expect [bounty_nft_output] =
+            outputs_at_with(
+              outputs,
+              oracle_input_datum.bounty_board_address,
+              policy_id,
+              "",
+            )
 
-                    let datum = output.datum |> to_bounty_datum()
-                    let datum_check =
-                      (lovelace_of(output.value) >= datum.reward)?
-
-                    let bounty_token_check =
-                      ( output.value |> quantity_of(policy_id, "") ) == 1
-                    address_check && datum_check && bounty_token_check
-                  },
-                )
+          let datum = bounty_nft_output.datum |> to_bounty_datum()
+          let datum_check =
+            (lovelace_of(bounty_nft_output.value) >= datum.reward)?
 
           // expect id token policy id == bounty token policy id
-          expect Some(_id_nft) =
-            inputs
-              |> list.find(
-                  fn(input) {
-                    when
-                      input.output.value
-                        |> flatten()
-                        |> list.find(
-                            fn((policy, _, _)) {
-                              policy == oracle_input_datum.id_token_policy_id
-                            },
-                          )
-                    is {
-                      Some(_) -> True
-                      _ -> False
-                    }
-                  },
-                )
-          amount == 1
+          expect [_id_nft_input] =
+            inputs_with_policy(inputs, oracle_input_datum.id_token_policy_id)
+
+          datum_check?
         }
         CheckBurn -> {
           expect [input0,
