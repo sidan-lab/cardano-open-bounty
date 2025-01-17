@@ -5,6 +5,7 @@ import CreateIDToken from "./CreateIDToken";
 import SearchBars from "./SearchBar";
 import { ApiMiddleware } from "@/middleware/api";
 import Contribute from "./Contribute";
+import Sign from "./Sign";
 interface Bounty {
   name: string;
   tasks: string;
@@ -15,6 +16,7 @@ interface Bounty {
 const BountyTable: React.FC = () => {
   const { wallet, connected } = useWallet();
   const api = new ApiMiddleware(wallet);
+  const [showOwnBountyBoard, setShowOwnBountyBoard] = useState<boolean>(false);
 
   const [bounties, setBounties] = useState<Bounty[]>([
     {
@@ -113,6 +115,21 @@ const BountyTable: React.FC = () => {
       required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
   ]);
+  const [userBounties, setUserBounties] = useState<Bounty[]>([
+    {
+      name: "Own Project-A: Build Feature Y",
+      tasks: "https://example.com/task16",
+      reward: "120 ADA",
+      required_signatories: ["signatory1"],
+    },
+    {
+      name: "Own Project-B: Deploy to Production",
+      tasks: "https://example.com/task17",
+      reward: "150 ADA",
+      required_signatories: ["signatory1"],
+    },
+  ]);
+
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -127,6 +144,10 @@ const BountyTable: React.FC = () => {
       checkIDTokenOwnership();
     }
   }, [connected, wallet]);
+
+  const toggleBountyBoard = () => {
+    setShowOwnBountyBoard((prev) => !prev);
+  };
 
   const handleCreateBounty = (newBounty: Bounty) => {
     setBounties((prevState) => [...prevState, newBounty]);
@@ -161,7 +182,14 @@ const BountyTable: React.FC = () => {
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg mx-auto max-w-full px-4 sm:px-6 lg:px-8 mt-8 w-full text-white dark:bg-gray-900">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-4xl font-bold dark:text-white">Bounty Board</h2>
+        <h2 className="text-4xl font-bold ">
+          {" "}
+          {showOwnBountyBoard ? "Own Bounty Board" : "Bounty Board"}
+        </h2>
+
+        <button className=" " onClick={toggleBountyBoard}>
+          {showOwnBountyBoard ? " Show Bounty Board" : "Show own Bounty Board"}
+        </button>
         <div className="flex space-x-2">
           {!hasIDToken && <CreateIDToken />}
           {connected && hasIDToken && (
@@ -191,64 +219,140 @@ const BountyTable: React.FC = () => {
         </div>
       </div>
 
-      <table className="w-full text-sm text-center rtl:text-right text-gray-500 dark:text-gray-400 mt-4 rounded-lg">
-        <thead className="text-xs text-gray-300 uppercase bg-gray-800 rounded-lg">
-          <tr>
-            <th scope="col" className="px-6 py-3 text-white">
-              Creator
-            </th>
-            <th scope="col" className="px-6 py-3 text-white">
-              Tasks
-            </th>
-            <th scope="col" className="px-6 py-3 text-white">
-              Reward
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-gray-800 divide-y divide-gray-700">
-          {displayedBounties.length === 0 ? (
-            <tr className="bg-gray-900">
-              <td
-                className="px-6 py-4 text-sm text-gray-400 text-center"
-                colSpan={4}
-              >
-                No bounties available
-              </td>
-            </tr>
-          ) : (
-            displayedBounties.map((bounty, index) => (
-              <tr
-                key={index}
-                className="bg-gray-900 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600"
-              >
-                <th
-                  scope="row"
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap text-white"
-                >
-                  {bounty.name}
+      {showOwnBountyBoard ? (
+        <>
+          <table className="w-full text-sm text-center rtl:text-right text-gray-500 dark:text-gray-400 mt-4 rounded-lg">
+            <thead className="text-xs text-gray-300 uppercase bg-gray-800">
+              <tr>
+                <th className="px-6 py-3 text-white font-semibold text-base">
+                  Creator
                 </th>
-                <td className="px-6 py-4 text-white">
-                  <a
-                    href={bounty.tasks}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
+                <th className="px-6 py-3 text-white font-semibold text-base">
+                  Tasks
+                </th>
+                <th className="px-6 py-3 text-white font-semibold text-base">
+                  Reward
+                </th>
+                <th className="px-6 py-3 text-white font-semibold text-base">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-gray-800 divide-y divide-gray-700">
+              {userBounties.length === 0 ? (
+                <tr className="bg-gray-900">
+                  <td
+                    className="px-6 py-4 text-sm text-gray-400 text-center"
+                    colSpan={4}
                   >
-                    {bounty.tasks}
-                  </a>
-                </td>
-                <td className="px-6 py-4 text-white">{bounty.reward}</td>
-                <td className="px-6 py-4">
-                  <Contribute bounty={bounty}></Contribute>
+                    No created bounties available
+                  </td>
+                </tr>
+              ) : (
+                userBounties.map((bounty, index) => (
+                  <tr
+                    key={index}
+                    className="bg-gray-900 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700"
+                  >
+                    <th
+                      scope="row"
+                      className="px-6 py-4 font-medium text-white whitespace-nowrap"
+                    >
+                      {bounty.name}
+                    </th>
+                    <td className="px-6 py-4 text-white">
+                      <a
+                        href={bounty.tasks}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        {bounty.tasks}
+                      </a>
+                    </td>
+                    <td className="px-6 py-4 text-white">{bounty.reward}</td>
+                    <td className="px-8 py-4 flex justify-center space-x-4">
+                      <Sign bounty={bounty} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </>
+      ) : (
+        <table className="w-full text-sm text-center rtl:text-right text-gray-500 dark:text-gray-400 mt-4 rounded-lg">
+          <thead className="text-xs text-gray-300 uppercase bg-gray-800 rounded-lg">
+            <tr>
+              <th
+                scope="col"
+                className="px-6 py-3 text-white font-semibold text-base"
+              >
+                Creator
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-white font-semibold text-base"
+              >
+                Tasks
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-white font-semibold text-base"
+              >
+                Reward
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-white font-semibold text-base"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-gray-800 divide-y divide-gray-700">
+            {displayedBounties.length === 0 ? (
+              <tr className="bg-gray-900">
+                <td
+                  className="px-6 py-4 text-sm text-gray-400 text-center"
+                  colSpan={4}
+                >
+                  No bounties available
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-
+            ) : (
+              displayedBounties.map((bounty, index) => (
+                <tr
+                  key={index}
+                  className="bg-gray-900 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600"
+                >
+                  <th
+                    scope="row"
+                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap text-white"
+                  >
+                    {bounty.name}
+                  </th>
+                  <td className="px-6 py-4 text-white">
+                    <a
+                      href={bounty.tasks}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:underline"
+                    >
+                      {bounty.tasks}
+                    </a>
+                  </td>
+                  <td className="px-6 py-4 text-white">{bounty.reward}</td>
+                  <td className="px-8 py-4 flex justify-center space-x-4">
+                    <Contribute bounty={bounty} />
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      )}
       <div className="mt-4 flex items-center justify-center">
-        {" "}
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setCurrentPage((curr) => Math.max(1, curr - 1))}
@@ -258,13 +362,21 @@ const BountyTable: React.FC = () => {
             Previous
           </button>
           <span className="text-gray-300">
-            Page {currentPage} of {totalPages}
+            Page {currentPage} of{" "}
+            {showOwnBountyBoard
+              ? Math.ceil(userBounties.length / rowsPerPage)
+              : Math.ceil(bounties.length / rowsPerPage)}
           </span>
           <button
             onClick={() =>
               setCurrentPage((curr) => Math.min(totalPages, curr + 1))
             }
-            disabled={currentPage === totalPages}
+            disabled={
+              currentPage ===
+              (showOwnBountyBoard
+                ? Math.ceil(userBounties.length / rowsPerPage)
+                : Math.ceil(bounties.length / rowsPerPage))
+            }
             className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-4 py-2 transition"
           >
             Next

@@ -20,8 +20,8 @@ const Contribute: React.FC<ContributeProps> = ({ bounty }) => {
     setIsModalOpen(false);
   };
 
-  const handleSign = () => {
-    // signing logic here
+  const handleConfirm = () => {
+    // logic here
     console.log(`User signed to contribute to ${bounty.name}`);
     setIsModalOpen(false);
   };
@@ -72,7 +72,7 @@ const Contribute: React.FC<ContributeProps> = ({ bounty }) => {
                   <span className="sr-only">Close modal</span>
                 </button>
               </div>
-              <form className="p-4" onSubmit={handleSign}>
+              <form className="p-4" onSubmit={handleConfirm}>
                 <div className="mb-4 text-gray-300">
                   <div className="mb-2">
                     <label className="block text-sm font-medium">Bounty</label>
@@ -93,7 +93,7 @@ const Contribute: React.FC<ContributeProps> = ({ bounty }) => {
                   </div>
                   <div className="mb-4">
                     <label className="block text-sm font-medium">
-                      Contributors
+                      Owners
                     </label>
                     <span>{bounty.required_signatories.join(", ")}</span>
                   </div>
@@ -104,7 +104,7 @@ const Contribute: React.FC<ContributeProps> = ({ bounty }) => {
                     type="submit"
                     className="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5"
                   >
-                    Sign
+                    Confirm
                   </button>
                   <button
                     type="button"
