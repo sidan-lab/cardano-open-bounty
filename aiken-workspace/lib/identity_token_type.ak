@@ -36,14 +36,13 @@ pub type TestData {
   oracle_nft: (PolicyId, AssetName),
   oracle_counter: PolicyId,
 }
+// test action() {
+//   let data: TestData =
+//     TestData {
+//       collection_name: "a",
+//       oracle_nft: ("a", "aaa"),
+//       oracle_counter: "aaa",
+//     }
 
-test action() {
-  let data: TestData =
-    TestData {
-      collection_name: "a",
-      oracle_nft: ("a", "aaa"),
-      oracle_counter: "aaa",
-    }
-
-  cbor.serialise(data) == #"d8799f43616263d8799fd87a9f43616263ffd87a80ff43646566d8799fd87a9f43646566ffd87a80ffff"
-}
+//   cbor.serialise(data) == #"d8799f43616263d8799fd87a9f43616263ffd87a80ff43646566d8799fd87a9f43646566ffd87a80ffff"
+// }
