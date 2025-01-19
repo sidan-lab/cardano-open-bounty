@@ -1,9 +1,6 @@
-// use aiken/cbor
-use aiken/collection/dict
 use aiken/primitive/bytearray.{concat}
 use cardano/address.{from_script}
-// use cardano/address.{Address}
-use cardano/assets.{AssetName, PolicyId, from_asset}
+use cardano/assets.{AssetName, PolicyId, from_asset, quantity_of}
 use cardano/transaction.{InlineDatum, Transaction} as tx
 use cip.{cip68_100, cip68_222}
 use cocktail.{convert_int_to_bytes, outputs_at_with}
@@ -33,49 +30,40 @@ validator identity_token(
     let oracle_counter_datum: OracleCounterDatum =
       inputs |> get_oracle_counter_datum(oracle_counter)
 
-    expect [Pair(asset_name_1, amount_1),
-      Pair(asset_name_2, amount_2)] =
-      mint
-        |> assets.tokens(policy_id)
-        |> dict.to_pairs()
-    let ref_tkn =
+    let counter_bytes = convert_int_to_bytes(oracle_counter_datum.count)
+
+    let ref_token_name =
       cip.cip68_100(collection_name)
-        |> concat(convert_int_to_bytes(oracle_counter_datum.count))
-    let nft_tkn =
+        |> concat(counter_bytes)
+    let ref_token_qty =
+      mint
+        |> quantity_of(policy_id, ref_token_name)
+
+    let nft_token_name =
       cip.cip68_222(collection_name)
-        |> concat(convert_int_to_bytes(oracle_counter_datum.count))
+        |> concat(counter_bytes)
+    let nft_token_qty =
+      mint
+        |> quantity_of(policy_id, nft_token_name)
 
-    let is_asset_names_cip68_compliant =
-      if asset_name_1 == ref_tkn {
-        asset_name_2 == nft_tkn
-      } else if asset_name_1 == nft_tkn {
-        asset_name_2 == ref_tkn
-      } else {
-        False
+    when redeemer is {
+      CheckMint -> {
+        let are_tokens_nfts = ref_token_qty == 1 && nft_token_qty == 1
+        expect [ref_output] =
+          outputs_at_with(
+            outputs,
+            oracle_input_datum.id_token_store_address,
+            policy_id,
+            ref_token_name,
+          )
+
+        let datum = ref_output.datum |> to_contributer_datum()
+        let datum_check = (datum.github != @"")? && (datum.contributions == [])?
+
+        are_tokens_nfts? && datum_check?
       }
-
-    let redeemer_check =
-      when redeemer is {
-        CheckMint -> {
-          let are_tokens_nfts = amount_1 == 1 && amount_2 == 1
-          expect [ref_output] =
-            outputs_at_with(
-              outputs,
-              oracle_input_datum.id_token_store_address,
-              policy_id,
-              ref_tkn,
-            )
-
-          let datum = ref_output.datum |> to_contributer_datum()
-          let datum_check =
-            (datum.github != @"")? && (datum.contributions == [])?
-
-          are_tokens_nfts? && datum_check?
-        }
-        CheckBurn -> (amount_1 == -1)? && (amount_2 == -1)?
-      }
-
-    is_asset_names_cip68_compliant? && redeemer_check?
+      CheckBurn -> (ref_token_qty == -1)? && (nft_token_qty == -1)?
+    }
   }
 
   else(_) {
@@ -321,16 +309,6 @@ test fail_mint_identity_token_with_no_datumn() fail {
     tx,
   )
 }
-
-// test address_check() {
-//   let ref_token_hold_address: Address = from_script("ref_token_hold")
-//   cbor.serialise(ref_token_hold_address) != "d8799fd87a9f4e7265665f746f6b656e5f686f6c64ffd87a80ff"
-// }
-
-// test param_test() {
-//   let param: (PolicyId, AssetName) = ("abc", "")
-//   cbor.serialise(param) != ""
-// }
 
 type BurnTestCase {
   is_counter_inputed: Bool,

@@ -1,22 +1,23 @@
 use cardano/assets.{add, from_asset}
-use cardano/transaction.{
-  InlineDatum, Input, Output, OutputReference, Transaction, find_input,
-}
+use cardano/transaction.{Input,
+  Output, OutputReference, Transaction, find_input}
 use cocktail.{
   address_payment_key, inputs_at_with_policy, key_signed, only_minted_token,
-  outputs_at_with_policy, value_length, value_tokens,
+  output_inline_datum, outputs_at_with_policy, value_length, value_tokens,
 }
 use mocktail.{
   complete, mint, mock_policy_id, mock_pub_key_address, mock_pub_key_hash,
   mock_script_address, mock_tx_hash, mock_utxo_ref, mocktail_tx,
   required_signer_hash, tx_in, tx_in_inline_datum, tx_out, tx_out_inline_datum,
 }
-use oracle_token_type.{MintNFT, OracleCounterDatum, OracleRedeemer, StopOracle}
+use oracle_token_type.{
+  MintIDToken, OracleCounterDatum, OracleCounterRedeemer, StopCounterOracle,
+}
 
 validator oracle_counter {
   spend(
     datum_opt: Option<OracleCounterDatum>,
-    redeemer: OracleRedeemer,
+    redeemer: OracleCounterRedeemer,
     input: OutputReference,
     tx: Transaction,
   ) {
@@ -34,18 +35,15 @@ validator oracle_counter {
         outputs_at_with_policy(outputs, own_address, oracle_nft_policy),
       )
     is {
-      (MintNFT, [_], [only_output]) -> {
+      (MintIDToken, [_], [only_output]) -> {
         let is_output_value_clean = value_length(only_output.value) == 2
-        let is_count_updated =
-          only_output.datum == InlineDatum(
-            OracleCounterDatum { count: count + 1, owner },
-          )
+        expect new_datum: OracleCounterDatum = output_inline_datum(only_output)
+        let is_count_updated = new_datum.count == count + 1
         is_output_value_clean? && is_count_updated?
       }
-      (StopOracle, [_], _) -> {
+      (StopCounterOracle, [_], _) -> {
         let is_oracle_nft_burnt =
           only_minted_token(mint, oracle_nft_policy, "", -1)
-
         is_oracle_nft_burnt? && is_owner_signed?
       }
       _ -> False
@@ -99,7 +97,7 @@ fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
 test success_mint() {
   let datum = mock_oracle_datum
 
-  let redeemer = MintNFT
+  let redeemer = MintIDToken
   let tx =
     mock_mint_tx(
       MintTestCase { is_oracle_output_clean: True, is_count_updated: True },
@@ -110,7 +108,7 @@ test success_mint() {
 
 test fail_mint_with_unclean_output() {
   let datum = mock_oracle_datum
-  let redeemer = MintNFT
+  let redeemer = MintIDToken
 
   let tx =
     mock_mint_tx(
@@ -122,7 +120,7 @@ test fail_mint_with_unclean_output() {
 
 test fail_mint_without_count_updated() {
   let datum = mock_oracle_datum
-  let redeemer = MintNFT
+  let redeemer = MintIDToken
 
   let tx =
     mock_mint_tx(
@@ -132,12 +130,12 @@ test fail_mint_without_count_updated() {
   !oracle_counter.spend(Some(datum), redeemer, mock_utxo_ref(0, 0), tx)
 }
 
-type StopOracleTestCase {
+type StopCounterOracleTestCase {
   is_oracle_nft_burnt: Bool,
 }
 
-fn mock_stop_oracle_tx(test_case: StopOracleTestCase) -> Transaction {
-  let StopOracleTestCase { is_oracle_nft_burnt } = test_case
+fn mock_stop_oracle_tx(test_case: StopCounterOracleTestCase) -> Transaction {
+  let StopCounterOracleTestCase { is_oracle_nft_burnt } = test_case
 
   let input_value = from_asset(mock_policy_id(0), "", 1)
 
@@ -151,8 +149,9 @@ fn mock_stop_oracle_tx(test_case: StopOracleTestCase) -> Transaction {
 
 test success_stop() {
   let datum = mock_oracle_datum
-  let redeemer = StopOracle
-  let tx = mock_stop_oracle_tx(StopOracleTestCase { is_oracle_nft_burnt: True })
+  let redeemer = StopCounterOracle
+  let tx =
+    mock_stop_oracle_tx(StopCounterOracleTestCase { is_oracle_nft_burnt: True })
 
   oracle_counter.spend(Some(datum), redeemer, mock_utxo_ref(0, 0), tx)
 }
@@ -160,10 +159,12 @@ test success_stop() {
 test fail_stop_with_oracle_nft_not_burnt() {
   let datum = mock_oracle_datum
 
-  let redeemer = StopOracle
+  let redeemer = StopCounterOracle
 
   let tx =
-    mock_stop_oracle_tx(StopOracleTestCase { is_oracle_nft_burnt: False })
+    mock_stop_oracle_tx(
+      StopCounterOracleTestCase { is_oracle_nft_burnt: False },
+    )
 
   !oracle_counter.spend(Some(datum), redeemer, mock_utxo_ref(0, 0), tx)
 }

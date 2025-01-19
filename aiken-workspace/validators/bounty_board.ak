@@ -1,7 +1,6 @@
 use aiken/collection/list
 use aiken/primitive/bytearray.{concat}
 use bounty_token_type.{BountyDatum, to_bounty_datum}
-use bounty_token_util.{has_all_signers}
 use cardano/address.{from_script}
 use cardano/assets.{
   AssetName, PolicyId, from_asset, from_lovelace, lovelace_of, merge,
@@ -9,8 +8,10 @@ use cardano/assets.{
 use cardano/transaction.{InlineDatum,
   OutputReference, Transaction, find_input} as tx
 use cip.{cip68_222}
-use cocktail.{convert_int_to_bytes, only_minted_token, outputs_at_with}
-use cocktail/vodka_inputs.{inputs_at}
+use cocktail.{
+  all_key_signed, convert_int_to_bytes, inputs_at, only_minted_token,
+  outputs_at_with,
+}
 use mocktail.{
   add_extra_signatory, add_output, complete, mock_policy_id,
   mock_pub_key_address, mock_pub_key_hash, mock_script_output, mock_tx_hash,
@@ -54,7 +55,7 @@ validator bounty_board(oracle_nft: (PolicyId, AssetName)) {
         let old_bounty_datum: BountyDatum =
           own_input.output.datum |> to_bounty_datum()
         let signatories_check =
-          has_all_signers(old_bounty_datum.all_signatories, extra_signatories)
+          all_key_signed(extra_signatories, old_bounty_datum.all_signatories)
 
         expect [bounty_board_output] =
           outputs_at_with(

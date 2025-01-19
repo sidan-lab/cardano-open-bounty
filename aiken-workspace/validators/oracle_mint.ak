@@ -1,9 +1,10 @@
 use aiken/collection/dict
 use aiken/collection/list
-use cardano/assets.{PolicyId, add, from_asset, from_lovelace}
+use cardano/assets.{PolicyId, add, from_asset, zero}
 use cardano/transaction.{Input, OutputReference, Transaction, placeholder}
 use mocktail.{
-  mock_policy_id, mock_pub_key_address, mock_pub_key_output, mock_utxo_ref,
+  complete, mint, mock_policy_id, mock_pub_key_address, mock_tx_hash,
+  mock_utxo_ref, mocktail_tx, tx_in,
 }
 use oracle_token_type.{Action, CheckBurn, CheckMint}
 
@@ -19,8 +20,8 @@ validator one_shot(utxo_ref: OutputReference) {
     let is_output_consumed =
       list.any(inputs, fn(input) { input.output_reference == utxo_ref })
     when redeemer is {
-      CheckMint -> is_output_consumed? && (quantity == 1)?
-      CheckBurn -> (quantity == -1)?
+      CheckMint -> is_output_consumed? && quantity == 1
+      CheckBurn -> quantity == -1
     }
     // No need to check if output is consumed for burning
   }
@@ -33,28 +34,18 @@ validator one_shot(utxo_ref: OutputReference) {
 test success_mint() {
   let redeemer = CheckMint
   let input_utxo = mock_utxo_ref(0, 1)
-  let policy_id: PolicyId =
-    #"1c1b7afe8affbee1505cf3ec5a58bd2734d4ffdfcc9b9f059625bd76"
+  let policy_id = mock_policy_id(0)
 
   let tx =
-    Transaction {
-      ..placeholder,
-      mint: from_asset(policy_id, "", 1),
-      inputs: [
-        Input {
-          output_reference: input_utxo,
-          output: mock_pub_key_output(
-            mock_pub_key_address(0, None),
-            from_lovelace(1000000),
-          ),
-        },
-      ],
-    }
+    mocktail_tx()
+      |> mint(True, 1, policy_id, "")
+      |> tx_in(True, mock_tx_hash(0), 1, zero, mock_pub_key_address(0, None))
+      |> complete()
 
   one_shot.mint(input_utxo, redeemer, policy_id, tx)
 }
 
-test fail_mint_no_utxo_ref_supply() {
+test fail_mint_no_utxo_ref_supply() fail {
   let redeemer = CheckMint
   let policy_id = mock_policy_id(0)
 

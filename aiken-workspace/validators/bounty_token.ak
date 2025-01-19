@@ -4,7 +4,6 @@ use aiken/primitive/bytearray.{starts_with}
 use bounty_token_type.{
   Action, BountyDatum, CheckBurn, CheckMint, to_bounty_datum,
 }
-use bounty_token_util.{has_all_signers}
 use cardano/address.{from_script}
 use cardano/assets.{
   AssetName, PolicyId, flatten, from_asset, from_lovelace, lovelace_of, merge,
@@ -12,8 +11,7 @@ use cardano/assets.{
 }
 use cardano/transaction.{InlineDatum, Input, Transaction} as tx
 use cip.{cip68_100_prefix, cip68_222_prefix}
-use cocktail.{outputs_at_with}
-use cocktail/vodka_inputs.{inputs_with_policy}
+use cocktail.{all_key_signed, inputs_with_policy, outputs_at_with}
 use identity_token_type.{ContributerDatum, Contribution, to_contributer_datum}
 use mocktail.{
   MocktailTx, add_extra_signatory, add_output, complete, mint, mock_policy_id,
@@ -159,7 +157,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
             }
 
           let signatories_check =
-            has_all_signers(bounty_datum.all_signatories, extra_signatories)
+            all_key_signed(bounty_datum.all_signatories, extra_signatories)
 
           and {
             amount == -1,

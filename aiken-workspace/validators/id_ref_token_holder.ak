@@ -1,12 +1,11 @@
-use aiken/collection/list
 use aiken/primitive/bytearray.{concat}
 use cardano/address.{from_script}
 use cardano/assets.{AssetName, PolicyId, from_asset}
 use cardano/transaction.{OutputReference, Transaction, find_input} as tx
 use cip.{cip68_100, cip68_222}
-use cocktail.{convert_int_to_bytes, inputs_with}
-use cocktail/vodka_inputs.{inputs_with_policy}
-use cocktail/vodka_value.{value_tokens}
+use cocktail.{
+  convert_int_to_bytes, inputs_with, inputs_with_policy, value_tokens,
+}
 use identity_token_type.{ContributerDatum}
 use mocktail.{
   complete, mock_policy_id, mock_pub_key_address, mock_script_address,
@@ -20,26 +19,29 @@ validator id_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
   spend(_datum, _redeemer, input: OutputReference, transaction: Transaction) {
     let Transaction { inputs, reference_inputs, .. } = transaction
 
-    let oracle_input_datum: OracleDatum =
+    let OracleDatum { bounty_token_policy_id, .. }: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
+
     expect Some(own_input) = find_input(inputs, input)
     expect [(policy_id, ref_asset_name, _)] =
       value_tokens(own_input.output.value)
 
-    let name_check =
-      ref_asset_name |> bytearray.starts_with(prefix: cip.cip68_100_prefix)
-
     // Get NFT AssetName
     let nft_asset_name = ref_asset_name |> bytearray.drop(4) |> cip68_222()
 
-    expect [_id_nft_input] = inputs_with(inputs, policy_id, nft_asset_name)
-
-    let bounty_token_inputs_length =
-      inputs_with_policy(inputs, oracle_input_datum.bounty_token_policy_id)
-        |> list.length()
-
-    let bounty_nft_check = bounty_token_inputs_length == 1
-    name_check? && bounty_nft_check?
+    when
+      (
+        inputs_with_policy(inputs, bounty_token_policy_id),
+        inputs_with(inputs, policy_id, nft_asset_name),
+      )
+    is {
+      ([_], [_]) -> {
+        let is_ref_token_name_correct =
+          ref_asset_name |> bytearray.starts_with(prefix: cip.cip68_100_prefix)
+        is_ref_token_name_correct?
+      }
+      _ -> False
+    }
   }
 
   else(_) {
@@ -49,7 +51,7 @@ validator id_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
 
 type SpendTestCase {
   is_oracle_inputed: Bool,
-  is_name_check: Bool,
+  is_ref_token_name_correct: Bool,
   is_id_nft_check: Bool,
   is_bounty_nft_check: Bool,
 }
@@ -57,7 +59,7 @@ type SpendTestCase {
 fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
   let SpendTestCase {
     is_oracle_inputed,
-    is_name_check,
+    is_ref_token_name_correct,
     is_id_nft_check,
     is_bounty_nft_check,
   } = test_case
@@ -81,7 +83,7 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
         },
       )
     |> tx_in(
-        is_name_check,
+        is_ref_token_name_correct,
         mock_tx_hash(1),
         0,
         from_asset(
@@ -123,7 +125,7 @@ test success_spend_identity_token() {
     mock_spend_tx(
       SpendTestCase {
         is_oracle_inputed: True,
-        is_name_check: True,
+        is_ref_token_name_correct: True,
         is_id_nft_check: True,
         is_bounty_nft_check: True,
       },
@@ -143,7 +145,7 @@ test fail_spend_identity_token_with_wrong_name() fail {
     mock_spend_tx(
       SpendTestCase {
         is_oracle_inputed: True,
-        is_name_check: False,
+        is_ref_token_name_correct: False,
         is_id_nft_check: True,
         is_bounty_nft_check: True,
       },
@@ -163,7 +165,7 @@ test fail_spend_identity_token_with_no_oracle() fail {
     mock_spend_tx(
       SpendTestCase {
         is_oracle_inputed: False,
-        is_name_check: True,
+        is_ref_token_name_correct: True,
         is_id_nft_check: True,
         is_bounty_nft_check: True,
       },
@@ -183,7 +185,7 @@ test fail_spend_identity_token_with_no_id_nft() fail {
     mock_spend_tx(
       SpendTestCase {
         is_oracle_inputed: True,
-        is_name_check: True,
+        is_ref_token_name_correct: True,
         is_id_nft_check: False,
         is_bounty_nft_check: True,
       },
@@ -203,7 +205,7 @@ test fail_spend_identity_token_with_no_bounty_nft() fail {
     mock_spend_tx(
       SpendTestCase {
         is_oracle_inputed: True,
-        is_name_check: True,
+        is_ref_token_name_correct: True,
         is_id_nft_check: True,
         is_bounty_nft_check: False,
       },
