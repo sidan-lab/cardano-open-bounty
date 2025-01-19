@@ -367,22 +367,22 @@ fn mock_burn_tx(
         ),
         from_script("ref_token_hold"),
       )
-    |> tx_in(
+    |> ref_tx_in(
         is_oracle_inputed,
         mock_tx_hash(0),
         0,
         from_asset(mock_policy_id(2), "oracle", 1),
         from_script("ref_token_hold"),
       )
-    |> tx_in_inline_datum(is_oracle_inputed, mock_oracle_datum)
-    |> ref_tx_in(
+    |> ref_tx_in_inline_datum(is_oracle_inputed, mock_oracle_datum)
+    |> tx_in(
         is_counter_inputed,
         mock_tx_hash(0),
         0,
         from_asset(mock_policy_id(3), "", 1),
         from_script("ref_token_hold"),
       )
-    |> ref_tx_in_inline_datum(
+    |> tx_in_inline_datum(
         is_counter_inputed,
         OracleCounterDatum { count: 10, owner: mock_pub_key_address(0, None) },
       )
