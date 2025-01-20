@@ -183,7 +183,6 @@ const BountyTable: React.FC = () => {
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg mx-auto max-w-full px-4 sm:px-6 lg:px-8 mt-8 w-full text-white dark:bg-gray-900">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-4xl font-bold ">
-          {" "}
           {showOwnBountyBoard ? "Own Bounty Board" : "Bounty Board"}
         </h2>
 
@@ -224,16 +223,16 @@ const BountyTable: React.FC = () => {
           <table className="w-full text-sm text-center rtl:text-right text-gray-500 dark:text-gray-400 mt-4 rounded-lg">
             <thead className="text-xs text-gray-300 uppercase bg-gray-800">
               <tr>
-                <th className="px-6 py-3 text-white font-semibold text-base">
+                <th className="w-1/4 px-6 py-3 text-white font-semibold text-base">
                   Creator
                 </th>
-                <th className="px-6 py-3 text-white font-semibold text-base">
+                <th className="w-1/2px-6 py-3 text-white font-semibold text-base">
                   Tasks
                 </th>
-                <th className="px-6 py-3 text-white font-semibold text-base">
+                <th className="w-1/4 px-6 py-3 text-white font-semibold text-base">
                   Reward
                 </th>
-                <th className="px-6 py-3 text-white font-semibold text-base">
+                <th className="w-1/4 px-6 py-3 text-white font-semibold text-base">
                   Actions
                 </th>
               </tr>
@@ -282,30 +281,18 @@ const BountyTable: React.FC = () => {
         </>
       ) : (
         <table className="w-full text-sm text-center rtl:text-right text-gray-500 dark:text-gray-400 mt-4 rounded-lg">
-          <thead className="text-xs text-gray-300 uppercase bg-gray-800 rounded-lg">
+          <thead className="text-xs text-gray-300 uppercase bg-gray-800">
             <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-white font-semibold text-base"
-              >
+              <th className="w-1/4 px-6 py-3 text-white font-semibold text-base">
                 Creator
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-white font-semibold text-base"
-              >
+              <th className="w-1/2px-6 py-3 text-white font-semibold text-base">
                 Tasks
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-white font-semibold text-base"
-              >
+              <th className="w-1/4 px-6 py-3 text-white font-semibold text-base">
                 Reward
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-white font-semibold text-base"
-              >
+              <th className="w-1/4 px-6 py-3 text-white font-semibold text-base">
                 Actions
               </th>
             </tr>
