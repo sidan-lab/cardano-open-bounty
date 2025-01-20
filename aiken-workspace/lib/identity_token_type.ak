@@ -8,7 +8,6 @@ pub type Action {
 
 pub type ContributerDatum {
   metadata: Pairs<Data, Data>,
-  // pubKeyHash: ByteArray
   // GitHub: ByteArray
   version: Int,
   contributions: Pairs<ByteArray, Int>,
