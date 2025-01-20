@@ -116,7 +116,7 @@ export const burnBountyToken = async (
   const api = new ApiMiddleware(wallet);
   try {
     const idNftTxResult = await api.getIdNftTx();
-    const getIdRefTokenResult = await api.getIdRefToken();
+    const idRefTokenResult = await api.getIdRefToken();
     const idRefTxResult = await api.getIdRefTx();
     const idInfoResult = await api.getIdInfo(
       idRefTxResult.txHash,
@@ -183,8 +183,7 @@ export const burnBountyToken = async (
       .mintRedeemerValue(mConStr1([]))
       .txOut(idSpendingScriptAddress, [
         {
-          unit:
-            idMintingPolicyId + stringToHex(getIdRefTokenResult.refAssetName),
+          unit: idMintingPolicyId + stringToHex(idRefTokenResult.refAssetName),
           quantity: "1",
         },
       ])
