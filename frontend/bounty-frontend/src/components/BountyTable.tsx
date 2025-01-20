@@ -15,9 +15,8 @@ interface Bounty {
 
 const BountyTable: React.FC = () => {
   const { wallet, connected } = useWallet();
-  const api = new ApiMiddleware(wallet);
   const [showOwnBountyBoard, setShowOwnBountyBoard] = useState<boolean>(false);
-
+  
   const [bounties, setBounties] = useState<Bounty[]>([
     {
       name: "Project-A: Fix Bugs",
@@ -115,7 +114,7 @@ const BountyTable: React.FC = () => {
       required_signatories: ["signatory1", "signatory2", "signatory3"],
     },
   ]);
-  const [userBounties, setUserBounties] = useState<Bounty[]>([
+  const [userBounties] = useState<Bounty[]>([
     {
       name: "Own Project-A: Build Feature Y",
       tasks: "https://example.com/task16",
@@ -129,22 +128,23 @@ const BountyTable: React.FC = () => {
       required_signatories: ["signatory1"],
     },
   ]);
-
+  
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [hasIDToken, setHasIDToken] = useState(false);
-
+  
   useEffect(() => {
     const checkIDTokenOwnership = async () => {
+      const api = new ApiMiddleware(wallet);
       const hasId = await api.findIdtoken();
       setHasIDToken(hasId.hasIdToken);
     };
     if (connected) {
       checkIDTokenOwnership();
     }
-  }, [api, connected, wallet]);
-
+  }, [ connected, wallet]);
+  
   const toggleBountyBoard = () => {
     setShowOwnBountyBoard((prev) => !prev);
   };
@@ -185,8 +185,10 @@ const BountyTable: React.FC = () => {
         <h2 className="text-4xl font-bold ">
           {showOwnBountyBoard ? "Own Bounty Board" : "Bounty Board"}
         </h2>
-
-        <button className=" " onClick={toggleBountyBoard}>
+        <button
+          className="text-white bg-text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+          onClick={toggleBountyBoard}
+        >
           {showOwnBountyBoard ? " Show Bounty Board" : "Show own Bounty Board"}
         </button>
         <div className="flex space-x-2">
@@ -271,7 +273,7 @@ const BountyTable: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-white">{bounty.reward}</td>
                     <td className="px-8 py-4 flex justify-center space-x-4">
-                      <Sign bounty={bounty} />
+                      <Sign />
                     </td>
                   </tr>
                 ))

@@ -11,10 +11,10 @@ const CreateIDToken: React.FC = () => {
   const [showMintPrompt, setShowMintPrompt] = useState(false);
   const [, setHasIDToken] = useState(false);
 
-  const api = new ApiMiddleware(wallet);
-
+  
   useEffect(() => {
     const checkIDTokenOwnership = async () => {
+      const api = new ApiMiddleware(wallet);
       const hasId = await api.findIdtoken();
 
       setHasIDToken(hasId.hasIdToken);

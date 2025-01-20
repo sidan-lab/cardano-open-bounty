@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { mintBountyToken } from "@/pages/transactions/bounty_token_mint";
-import { useWallet } from "@meshsdk/react";
+// import { mintBountyToken } from "@/pages/transactions/bounty_token_mint";
+// import { useWallet } from "@meshsdk/react";
 
 interface Bounty {
   name: string;
@@ -18,7 +18,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
 }) => {
   const [formVisible, setFormVisible] = useState(false);
   const [, setIsLoading] = useState(false);
-  const { wallet } = useWallet();
+  // const { wallet } = useWallet();
   const [newBounty, setNewBounty] = useState<Bounty>({
     name: "",
     tasks: "",
@@ -229,7 +229,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
                 type="submit"
                 className="text-white bg-gray-700 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2"
                 onClick={() => {
-                  mintBountyToken(wallet);
+                  // mintBountyToken(wallet);
                 }}
               >
                 Create Bounty

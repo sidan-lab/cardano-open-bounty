@@ -4,16 +4,16 @@ const Sign: React.FC = () => {
   const bounty = {
     name: "Project-A: Fix Bugs",
     required_signatories: ["signatory1", "signatory2", "signatory3"],
-    Contributer_signed: [
+    contributer_signed: [
       { name: "signatory1", github: "https://github.com/signatory1" },
       { name: "signatory2", github: "https://github.com/signatory2" },
-    ], 
+    ],
   };
 
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [currentContributors, setCurrentContributors] = useState<
-    typeof bounty.signed_by_contributors
-  >(bounty.signed_by_contributors);
+  const [currentContributors] = useState<
+    typeof bounty.contributer_signed
+  >(bounty.contributer_signed);
   const [currentRequiredSigners, setCurrentRequiredSigners] = useState<
     string[]
   >(bounty.required_signatories);
@@ -26,9 +26,8 @@ const Sign: React.FC = () => {
     setShowModal(false);
   };
 
-  const handleFinalSign = () => {
+  const handleSign = () => {
     // Handle signing logic here (e.g., mark the required signer as signed)
-    // Just for demonstration, we can clear the required signers
     setCurrentRequiredSigners([]);
   };
 
@@ -36,63 +35,79 @@ const Sign: React.FC = () => {
     <div>
       <button
         onClick={handleSignClick}
-        className="text-blue-500 hover:underline"
+        className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-semibold rounded-lg text-base px-6 py-3 transition duration-200 ease-in-out"
       >
         Sign
       </button>
 
-      {/* Pop-up Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-gray-800 text-white p-4 rounded-lg w-1/3">
-            <h4 className="font-semibold text-lg mb-2">Signers Information</h4>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4">
+          <div className="bg-gray-900 text-white p-6 rounded-lg shadow-lg w-full max-w-xl max-h-[80vh] overflow-y-auto">
+            <h4 className="font-semibold text-xl mb-4 text-center">
+              Signers Information
+            </h4>
 
-            <h5 className="font-semibold">Contributors who signed:</h5>
-            <ul className="mb-4">
-              {currentContributors.length > 0 ? (
-                currentContributors.map((contributor, index) => (
-                  <li key={index} className="ml-4">
-                    <a
-                      href={contributor.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline"
-                    >
-                      {contributor.name}
-                    </a>
-                  </li>
-                ))
-              ) : (
-                <li className="ml-4">No contributors have signed yet.</li>
-              )}
-            </ul>
+            <div className="flex flex-col space-y-4">
+              {/* Contributors Section */}
+              <div className="bg-gray-800 p-4 rounded-lg shadow-md">
+                <h5 className="font-semibold text-lg mb-2">
+                  Contributors who signed:
+                </h5>
+                <ul className="mb-4">
+                  {currentContributors.length > 0 ? (
+                    currentContributors.map((contributor, index) => (
+                      <li
+                        key={index}
+                        className="transition duration-200 ease-in-out transform hover:scale-105 mb-2"
+                      >
+                        <a
+                          href={contributor.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:underline"
+                        >
+                          {contributor.github}
+                        </a>
+                      </li>
+                    ))
+                  ) : (
+                    <li>No contributors have signed yet.</li>
+                  )}
+                </ul>
+              </div>
 
-            <h5 className="font-semibold">Required signers yet to sign:</h5>
-            <ul>
-              {currentRequiredSigners.length > 0 ? (
-                currentRequiredSigners.map((signer, index) => (
-                  <li key={index} className="ml-4">
-                    {signer}
-                  </li>
-                ))
-              ) : (
-                <li className="ml-4">All required signers have signed.</li>
-              )}
-            </ul>
+              {/* Required Signers Section */}
+              <div className="bg-gray-800 p-4 rounded-lg shadow-md">
+                <h5 className="font-semibold text-lg mb-2">
+                  Required signers yet to sign:
+                </h5>
+                <ul>
+                  {currentRequiredSigners.length > 0 ? (
+                    currentRequiredSigners.map((signer, index) => (
+                      <li key={index}>{signer}</li>
+                    ))
+                  ) : (
+                    <li>All required signers have signed.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
 
-            <button
-              className="mt-4 px-4 py-2 bg-green-500 text-white rounded"
-              onClick={handleFinalSign} // This will be called to simulate completing the signing process
-            >
-              Sign
-            </button>
+            <div className="flex flex-col mt-4">
+              <button
+                className="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200"
+                onClick={handleSign}
+              >
+                Sign
+              </button>
 
-            <button
-              className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-              onClick={closeModal}
-            >
-              Close
-            </button>
+              <button
+                className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition duration-200"
+                onClick={closeModal}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
