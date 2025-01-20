@@ -143,7 +143,7 @@ fn successful_mint_tx() -> Transaction {
         0,
         merge(
           from_lovelace(100000000000),
-          from_asset(mock_policy_id(0), "abc", 1),
+          from_asset(mock_policy_id(1), cip68_222("token1"), 1),
         ),
         from_script("ref_token_hold"),
       )
@@ -159,7 +159,7 @@ fn successful_mint_tx() -> Transaction {
         OracleDatum {
           bounty_token_policy_id: mock_policy_id(0),
           bounty_board_address: from_script("bounty_board_hold"),
-          id_token_policy_id: mock_policy_id(0),
+          id_token_policy_id: mock_policy_id(1),
           id_token_store_address: from_script("ref_token_hold"),
           owner: mock_pub_key_address(0, None),
         },
@@ -171,7 +171,7 @@ fn successful_mint_tx() -> Transaction {
           from_script("bounty_board_hold"),
           merge(
             from_lovelace(100000000000),
-            from_asset(mock_policy_id(0), "", 1),
+            from_asset(mock_policy_id(0), "token1", 1),
           ),
           InlineDatum(BountyDatum { issue_url: [], reward: 100000000000 }),
         ),
@@ -187,7 +187,7 @@ fn successful_burn_tx() -> Transaction {
         0,
         merge(
           from_lovelace(100000000000),
-          from_asset(mock_policy_id(0), cip.cip68_100("id"), 1),
+          from_asset(mock_policy_id(0), cip.cip68_100("contributor"), 1),
         ),
         from_script("ref_token_hold"),
       )
@@ -206,9 +206,9 @@ fn successful_burn_tx() -> Transaction {
         0,
         merge(
           from_lovelace(100000000000),
-          from_asset(mock_policy_id(0), cip.cip68_222("id"), 1),
+          from_asset(mock_policy_id(0), cip.cip68_222("contributor"), 1),
         ),
-        from_script("ref_token_hold"),
+        from_script("con"),
       )
     |> tx_in(
         True,
@@ -226,7 +226,7 @@ fn successful_burn_tx() -> Transaction {
         mock_tx_hash(0),
         0,
         from_asset(mock_policy_id(0), "oracle", 1),
-        from_script("ref_token_hold"),
+        from_script("oracle"),
       )
     |> ref_tx_in_inline_datum(
         True,
@@ -238,8 +238,23 @@ fn successful_burn_tx() -> Transaction {
           owner: mock_pub_key_address(0, None),
         },
       )
+    |> ref_tx_in(
+        True,
+        mock_tx_hash(0),
+        0,
+        from_asset(mock_policy_id(0), cip68_100("bounty"), 1),
+        from_script("ref_token_hold"),
+      )
+    |> ref_tx_in_inline_datum(
+        True,
+        ContributerDatum {
+          metadata: [],
+          version: 1,
+          contributions: [],
+          pub_key_hash: mock_pub_key_hash(1),
+        },
+      )
     |> complete()
-    |> add_extra_signatory(True, mock_pub_key_hash(0))
     |> add_extra_signatory(True, mock_pub_key_hash(1))
     |> add_output(
         True,
@@ -247,13 +262,13 @@ fn successful_burn_tx() -> Transaction {
           from_script("ref_token_hold"),
           merge(
             from_lovelace(100000000000),
-            from_asset(mock_policy_id(0), cip.cip68_100("id"), 1),
+            from_asset(mock_policy_id(0), cip.cip68_100("contributor"), 1),
           ),
           InlineDatum(
             ContributerDatum {
               metadata: [],
               version: 1,
-              contributions: [Pair(mock_pub_key_hash(0), 100000000000)],
+              contributions: [Pair("bounty", 100000000000)],
               pub_key_hash: mock_pub_key_hash(0),
             },
           ),

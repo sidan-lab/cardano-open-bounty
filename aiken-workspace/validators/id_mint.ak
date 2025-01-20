@@ -11,7 +11,7 @@ use identity_token_type.{
 use mocktail.{
   add_output, complete, mint, mock_policy_id, mock_pub_key_address,
   mock_pub_key_hash, mock_script_output, mock_tx_hash, mocktail_tx, ref_tx_in,
-  ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
+  ref_tx_in_inline_datum, required_signer_hash, tx_in, tx_in_inline_datum,
 }
 use oracle_token_type.{OracleCounterDatum, OracleDatum}
 use oracle_token_util.{get_oracle_counter_datum, get_oracle_nft_datum}
@@ -88,6 +88,7 @@ type MintTestCase {
   is_ref_output_check: Bool,
   is_redeemer_check: Bool,
   is_datum_check: Bool,
+  is_key_signed: Bool,
 }
 
 const mock_oracle_datum: OracleDatum =
@@ -109,6 +110,7 @@ fn mock_mint_tx(
     is_ref_output_check,
     is_redeemer_check,
     is_datum_check,
+    is_key_signed,
   } = test_case
 
   mocktail_tx()
@@ -145,6 +147,7 @@ fn mock_mint_tx(
         is_counter_inputed,
         OracleCounterDatum { count: 10, owner: mock_pub_key_address(0, None) },
       )
+    |> required_signer_hash(is_key_signed, mock_pub_key_hash(0))
     |> complete()
     |> add_output(
         is_ref_output_check,
@@ -184,6 +187,7 @@ test success_mint_identity_token() {
         is_ref_output_check: True,
         is_redeemer_check: True,
         is_datum_check: True,
+        is_key_signed: True,
       },
       collection_name: collection_name,
     )
@@ -210,6 +214,7 @@ test fail_mint_identity_token_with_no_counter() fail {
         is_ref_output_check: True,
         is_redeemer_check: True,
         is_datum_check: True,
+        is_key_signed: True,
       },
       collection_name: collection_name,
     )
@@ -236,6 +241,7 @@ test fail_mint_identity_token_with_no_oracle() fail {
         is_ref_output_check: True,
         is_redeemer_check: True,
         is_datum_check: True,
+        is_key_signed: True,
       },
       collection_name: collection_name,
     )
@@ -262,6 +268,7 @@ test fail_mint_identity_token_with_no_ref_output() fail {
         is_ref_output_check: False,
         is_redeemer_check: True,
         is_datum_check: True,
+        is_key_signed: True,
       },
       collection_name: collection_name,
     )
@@ -288,6 +295,7 @@ test fail_mint_identity_token_with_no_redeeme() fail {
         is_ref_output_check: True,
         is_redeemer_check: False,
         is_datum_check: True,
+        is_key_signed: True,
       },
       collection_name: collection_name,
     )
@@ -314,6 +322,34 @@ test fail_mint_identity_token_with_no_datumn() fail {
         is_ref_output_check: True,
         is_redeemer_check: True,
         is_datum_check: False,
+        is_key_signed: True,
+      },
+      collection_name: collection_name,
+    )
+
+  identity_token.mint(
+    collection_name,
+    (mock_policy_id(2), "oracle"),
+    mock_policy_id(3),
+    id_redeemer,
+    mock_policy_id(1),
+    tx,
+  )
+}
+
+test fail_mint_identity_token_with_no_sign() fail {
+  let collection_name = "id"
+  let id_redeemer = CheckMint
+
+  let tx =
+    mock_mint_tx(
+      MintTestCase {
+        is_counter_inputed: True,
+        is_oracle_inputed: True,
+        is_ref_output_check: True,
+        is_redeemer_check: True,
+        is_datum_check: True,
+        is_key_signed: False,
       },
       collection_name: collection_name,
     )

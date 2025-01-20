@@ -45,11 +45,15 @@ test success_mint() {
   one_shot.mint(input_utxo, redeemer, policy_id, tx)
 }
 
-test fail_mint_no_utxo_ref_supply() fail {
+test fail_mint_no_utxo_ref_supply() {
   let redeemer = CheckMint
   let policy_id = mock_policy_id(0)
 
-  let tx = Transaction { ..placeholder, mint: from_asset(policy_id, "", 1) }
+  let tx =
+    mocktail_tx()
+      |> mint(True, 1, policy_id, "")
+      |> tx_in(True, mock_tx_hash(0), 1, zero, mock_pub_key_address(0, None))
+      |> complete()
   !one_shot.mint(mock_utxo_ref(0, 0), redeemer, policy_id, tx)
 }
 
