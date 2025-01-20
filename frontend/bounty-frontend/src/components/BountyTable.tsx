@@ -143,7 +143,7 @@ const BountyTable: React.FC = () => {
     if (connected) {
       checkIDTokenOwnership();
     }
-  }, [connected, wallet]);
+  }, [api, connected, wallet]);
 
   const toggleBountyBoard = () => {
     setShowOwnBountyBoard((prev) => !prev);
