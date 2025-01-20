@@ -4,12 +4,13 @@ use cardano/assets.{AssetName, PolicyId, from_asset, quantity_of}
 use cardano/transaction.{InlineDatum, Transaction} as tx
 use cip.{cip68_100, cip68_222}
 use cocktail.{convert_int_to_bytes, outputs_at_with}
+use cocktail/vodka_extra_signatories.{key_signed}
 use identity_token_type.{
   Action, CheckBurn, CheckMint, ContributerDatum, to_contributer_datum,
 }
 use mocktail.{
   add_output, complete, mint, mock_policy_id, mock_pub_key_address,
-  mock_script_output, mock_tx_hash, mocktail_tx, ref_tx_in,
+  mock_pub_key_hash, mock_script_output, mock_tx_hash, mocktail_tx, ref_tx_in,
   ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
 }
 use oracle_token_type.{OracleCounterDatum, OracleDatum}
@@ -21,8 +22,14 @@ validator identity_token(
   oracle_counter: PolicyId,
 ) {
   mint(redeemer: Action, policy_id: PolicyId, transaction: Transaction) {
-    let Transaction { mint, outputs, reference_inputs, inputs, .. } =
-      transaction
+    let Transaction {
+      mint,
+      outputs,
+      reference_inputs,
+      inputs,
+      extra_signatories,
+      ..
+    } = transaction
 
     let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
@@ -58,7 +65,11 @@ validator identity_token(
           )
 
         let datum = ref_output.datum |> to_contributer_datum()
-        let datum_check = datum.contributions == []
+        let datum_check =
+          datum.contributions == [] && key_signed(
+            extra_signatories,
+            datum.pub_key_hash,
+          )
 
         are_tokens_nfts? && datum_check?
       }
@@ -147,7 +158,12 @@ fn mock_mint_tx(
           ),
           if is_datum_check {
             InlineDatum(
-              ContributerDatum { metadata: [], version: 1, contributions: [] },
+              ContributerDatum {
+                metadata: [],
+                version: 1,
+                contributions: [],
+                pub_key_hash: mock_pub_key_hash(0),
+              },
             )
           } else {
             InlineDatum(mock_oracle_datum)

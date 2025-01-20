@@ -1,4 +1,3 @@
-use aiken/crypto.{VerificationKeyHash}
 use cardano/assets.{AssetName, PolicyId}
 use cardano/transaction.{Datum, InlineDatum} as tx
 
@@ -9,8 +8,11 @@ pub type Action {
 
 pub type ContributerDatum {
   metadata: Pairs<Data, Data>,
+  // pubKeyHash: ByteArray
+  // GitHub: ByteArray
   version: Int,
-  contributions: Pairs<VerificationKeyHash, Int>,
+  contributions: Pairs<ByteArray, Int>,
+  pub_key_hash: ByteArray,
 }
 
 pub fn to_contributer_datum(data: Datum) -> ContributerDatum {

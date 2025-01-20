@@ -8,9 +8,9 @@ use cocktail.{
 }
 use identity_token_type.{ContributerDatum}
 use mocktail.{
-  complete, mock_policy_id, mock_pub_key_address, mock_script_address,
-  mock_tx_hash, mocktail_tx, ref_tx_in, ref_tx_in_inline_datum, tx_in,
-  tx_in_inline_datum,
+  complete, mock_policy_id, mock_pub_key_address, mock_pub_key_hash,
+  mock_script_address, mock_tx_hash, mocktail_tx, ref_tx_in,
+  ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
 }
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
@@ -112,7 +112,12 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
       )
     |> tx_in_inline_datum(
         is_id_nft_check,
-        ContributerDatum { metadata: [], version: 1, contributions: [] },
+        ContributerDatum {
+          metadata: [],
+          version: 1,
+          contributions: [],
+          pub_key_hash: mock_pub_key_hash(0),
+        },
       )
     |> tx_in(
         is_bounty_nft_check,
