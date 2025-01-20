@@ -1,5 +1,5 @@
 import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../../aiken-workspace/plutus.json";
+import blueprint from "../../../../aiken-workspace/plutus.json";
 import {
   BlockfrostProvider,
   IWallet,
@@ -14,7 +14,7 @@ import {
 } from "@meshsdk/core";
 import { getUtxoApiRoute, insertMultiSigApiRoute } from "./api_common";
 import { ApiMiddleware } from "@/middleware/api";
-import { BountyDatum } from "../api/type";
+import { BountyDatum } from "./types";
 
 export const mintBountyToken = async (
   bounty_name: string,

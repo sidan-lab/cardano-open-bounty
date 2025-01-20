@@ -1,5 +1,5 @@
 import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../../aiken-workspace/plutus.json";
+import blueprint from "../../../../aiken-workspace/plutus.json";
 import {
   BlockfrostProvider,
   IWallet,
