@@ -26,7 +26,7 @@ const Profile: React.FC = () => {
 
   const [, setUserBalance] = useState("");
   const [userToken, setUserToken] = useState<string | null>(null);
-  const [userContributions, setUserContributions] = useState<number>(0);
+  const [, setUserContributions] = useState<number>(0);
   const [userGithubUrl, setUserGithubUrl] = useState<string | null>(null);
 
   function classNames(...classes: unknown[]) {

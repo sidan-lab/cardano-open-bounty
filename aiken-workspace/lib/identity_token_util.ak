@@ -1,8 +1,10 @@
 use aiken/collection/list
+use aiken/collection/pairs
+use aiken/crypto.{VerificationKeyHash}
+use aiken/primitive/bytearray
 use cardano/assets.{AssetName, PolicyId, quantity_of}
 use cardano/transaction.{DatumHash, InlineDatum, Input, NoDatum}
 use identity_token_type.{ContributerDatum}
-use mocktail/virgin_key_hash.{mock_pub_key_hash}
 
 pub fn get_contributer_datum(
   inputs: List<Input>,
@@ -27,44 +29,44 @@ pub fn get_contributer_datum(
   contributer_input_datum
 }
 
-pub fn has_all_signers(
-  all_signers: List<ByteArray>,
-  actual_signers: List<ByteArray>,
-) -> Bool {
-  when all_signers is {
-    [] -> True
-    [head, ..tail] ->
-      if list.has(actual_signers, head) {
-        if list.length(tail) == 1 {
-          expect Some(last) = list.head(tail)
-          if list.has(actual_signers, last) {
-            True
-          } else {
-            False
-          }
-        } else {
-          has_all_signers(tail, actual_signers)
-        }
-      } else {
-        False
-      }
-  }
+pub fn update_contributor_datum(
+  contributer_datum: ContributerDatum,
+  bounty_owner: VerificationKeyHash,
+  reward: Int,
+) -> ContributerDatum {
+  let new_contribution =
+    when pairs.get_first(contributer_datum.contributions, bounty_owner) is {
+      Some(current_contribution) -> current_contribution + reward
+      None -> reward
+    }
+
+  let updated_datum: ContributerDatum =
+    ContributerDatum {
+      ..contributer_datum,
+      contributions: contributer_datum.contributions
+        |> pairs.repsert_by_ascending_key(
+            bounty_owner,
+            new_contribution,
+            bytearray.compare,
+          ),
+    }
+
+  updated_datum
 }
 
-test address_check() {
-  let all_signers: List<ByteArray> =
-    [
-      mock_pub_key_hash(3),
-      mock_pub_key_hash(2),
-      mock_pub_key_hash(1),
-      mock_pub_key_hash(0),
-    ]
-  let actual_signers: List<ByteArray> =
-    [
-      mock_pub_key_hash(0),
-      mock_pub_key_hash(1),
-      mock_pub_key_hash(2),
-      mock_pub_key_hash(3),
-    ]
-  has_all_signers(all_signers: all_signers, actual_signers: actual_signers)
+pub fn is_token_provided(
+  inputs: List<Input>,
+  token_policy: PolicyId,
+  token_name: AssetName,
+) -> Bool {
+  let id_nft_quantity =
+    inputs
+      |> list.filter(
+          fn(input) {
+            quantity_of(input.output.value, token_policy, token_name) == 1
+          },
+        )
+      |> list.length()
+
+  id_nft_quantity == 1
 }

@@ -5,14 +5,20 @@ import {
   BountyDatum,
 } from "@/pages/api/type";
 import {
+  applyParamsToScript,
   BlockfrostProvider,
   deserializeDatum,
+  mTuple,
+  resolveScriptHash,
   stringToHex,
 } from "@meshsdk/core";
+import blueprint from "../../../../aiken-workspace/plutus.json";
 import { AddressUtxo, AssetTransaction, Bounty, Contribution } from "./type";
 
 export class BlockfrostService {
   blockFrost: BlockfrostProvider;
+  idMintingPolicyId: string;
+  bountyMintingPolicyId: string;
 
   getOracleCounterDatumn = async (
     txHash: string,
@@ -34,6 +40,28 @@ export class BlockfrostService {
   };
 
   getIdTokenTxHash = async (
+    policyId: string,
+    assetName: string
+  ): Promise<{ txHash: string; index: number }> => {
+    const asset = policyId + stringToHex(assetName);
+    const url = `/assets/${asset}/transactions`;
+    try {
+      const assetTransactions: AssetTransaction[] = await this.blockFrost.get(
+        url
+      );
+
+      const txHash = assetTransactions[0].tx_hash;
+
+      const index = assetTransactions[0].tx_index;
+
+      return { txHash, index };
+    } catch (error) {
+      console.error("Error geting idToken txHash:", error);
+      throw error;
+    }
+  };
+
+  getIdRefTxHash = async (
     policyId: string,
     assetName: string
   ): Promise<{ txHash: string; index: number }> => {
@@ -98,27 +126,24 @@ export class BlockfrostService {
 
       const bounties: Bounty[] = [];
 
-      const bountyDatum: BountyDatum[] = [];
-
       addressUtxos.forEach((uxto) => {
         if (uxto.inline_datum) {
           const data: BountyDatum = deserializeDatum(uxto.inline_datum);
-          bountyDatum.push(data);
+          const all_signs: string[] = [];
+          data.fields[2].list.forEach((sign) => {
+            all_signs.push(sign.toString());
+          });
+
+          const bounty: Bounty = {
+            name: uxto.amount
+              .find((a) => a.unit.slice(0, 56) == this.bountyMintingPolicyId)!
+              .unit.slice(56),
+            issue_url: data.fields[0].toString(),
+            reward: Number(data.fields[1].int),
+            all_signatories: all_signs,
+          };
+          bounties.push(bounty);
         }
-      });
-
-      bountyDatum.forEach((datum) => {
-        const all_signs: string[] = [];
-        datum.fields[2].list.forEach((sign) => {
-          all_signs.push(sign.toString());
-        });
-
-        const bounty: Bounty = {
-          issue_url: datum.fields[0].toString(),
-          reward: Number(datum.fields[1].int),
-          all_signatories: all_signs,
-        };
-        bounties.push(bounty);
       });
 
       return { bounties };
@@ -132,5 +157,35 @@ export class BlockfrostService {
     this.blockFrost = new BlockfrostProvider(
       process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY!
     );
+
+    const idMintingScriptCbor = applyParamsToScript(
+      blueprint.validators[5]!.compiledCode,
+      [
+        stringToHex(`${process.env.NEXT_PUBLIC_COLLECTION_NAME!}`),
+        mTuple(
+          process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
+          process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
+        ),
+        process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_POLICY_ID!,
+      ],
+      "Mesh"
+    );
+    this.idMintingPolicyId = resolveScriptHash(idMintingScriptCbor, "V3");
+
+    const bountyMintingScriptCbor = applyParamsToScript(
+      blueprint.validators[3]!.compiledCode,
+      [
+        mTuple(
+          process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
+          process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
+        ),
+      ],
+      "Mesh"
+    );
+    const bountyMintingPolicyId = resolveScriptHash(
+      bountyMintingScriptCbor,
+      "V3"
+    );
+    this.bountyMintingPolicyId = bountyMintingPolicyId;
   }
 }

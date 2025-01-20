@@ -3,6 +3,7 @@
 ## Parameter
 
 ## Datum
+
 ```rs
 
 type Redeemer {
@@ -24,7 +25,7 @@ type Contribution {
 
 ## User Action
 
-1. Update contributor || bounty creator info 
+1. Update contributor || bounty creator info
 
    - Validate UTxO has to hold the Reference NFT
    - Verify validity of datum of the referenced output by checking if policy ID of reference NFT and user token and their asset names without the asset_name_label prefix match
