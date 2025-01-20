@@ -32,7 +32,7 @@ export type ContributerDatum = ConStr0<
     List<MTuple<Data, Data>>,
     Integer,
     List<MTuple<ByteString, Integer>>,
-    ByteString
+    PubKeyHash
   ]
 >;
 
@@ -45,6 +45,31 @@ export type ActionUpdate = ConStr0<[]>;
 export type ActionStop = ConStr0<[]>;
 
 export type BountyBurn = ConStr1<[ByteString]>;
+
+export type OracleNFT = {
+  bounty_token_policy_id: string;
+  bounty_board_address: string;
+  id_token_policy_id: string;
+  id_token_store_address: string;
+  owner: string;
+};
+
+export type OracleCounter = {
+  count: number;
+  owner: string;
+};
+
+export type Bounty = {
+  issue_url: string;
+  reward: number;
+};
+
+export type Contributer = {
+  metadata: [Data, Data][];
+  version: number;
+  contributions: [string, number][];
+  pub_key_hash: string;
+};
 
 export const oracleNFTDatum = (
   bountyTokenPolicyId: string,
@@ -101,31 +126,6 @@ export const constructContributerDatum = (
 
 export const bountyBurn = (contributor_pub_key_hash: string): BountyBurn =>
   conStr1([{ bytes: contributor_pub_key_hash }]);
-
-export type OracleNFT = {
-  bounty_token_policy_id: string;
-  bounty_board_address: string;
-  id_token_policy_id: string;
-  id_token_store_address: string;
-  owner: string;
-};
-
-export type OracleCounter = {
-  count: number;
-  owner: string;
-};
-
-export type Bounty = {
-  issue_url: string;
-  reward: number;
-};
-
-export type Contributer = {
-  metadata: [Data, Data][];
-  version: number;
-  contributions: [string, number][];
-  pub_key_hash: string;
-};
 
 export function convertOracleNFTrDatum(datum: OracleNFTDatum): OracleNFT {
   const bounty_token_policy_id: string = datum.fields[0].bytes;
