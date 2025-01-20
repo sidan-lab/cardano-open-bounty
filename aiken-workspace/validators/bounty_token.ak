@@ -7,8 +7,7 @@ use cardano/assets.{
 }
 use cardano/transaction.{InlineDatum, Input, Transaction} as tx
 use cip.{cip68_100, cip68_222}
-use cocktail.{inputs_at_with, outputs_at_with, value_tokens}
-use cocktail/vodka_inputs.{inputs_with}
+use cocktail.{inputs_at_with, key_signed, outputs_at_with, value_tokens}
 use identity_token_type.{ContributerDatum, to_contributer_datum}
 use identity_token_util.{is_token_provided, update_contributor_datum}
 use mocktail.{
@@ -23,8 +22,14 @@ use oracle_token_util.{get_oracle_nft_datum}
 validator bounty_token(oracle_token: (PolicyId, AssetName)) {
   mint(redeemer: Action, policy_id: PolicyId, transaction: Transaction) {
     // destructure the transaction
-    let Transaction { inputs, mint, outputs, reference_inputs, .. } =
-      transaction
+    let Transaction {
+      inputs,
+      mint,
+      outputs,
+      reference_inputs,
+      extra_signatories,
+      ..
+    } = transaction
 
     expect [(_, only_mint_asset_name, only_mint_quantity)] = value_tokens(mint)
 
@@ -60,26 +65,27 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
 
         is_bounty_reward_provided? && is_id_token_provided?
       }
-      CheckBurn -> {
-        expect [id_ref_input] =
+      CheckBurn(contributer_asset_name) -> {
+        expect [owner_id_ref_input] =
+          inputs_at_with(
+            reference_inputs,
+            id_token_store_address,
+            id_token_policy_id,
+            cip68_100(only_mint_asset_name),
+          )
+        expect [contributor_id_ref_input] =
           inputs_at_with(
             inputs,
             id_token_store_address,
             id_token_policy_id,
-            cip68_100(only_mint_asset_name),
+            cip68_100(contributer_asset_name),
           )
-        expect [id_ref_output] =
+        expect [contributor_id_ref_output] =
           outputs_at_with(
             outputs,
             id_token_store_address,
             id_token_policy_id,
-            cip68_100(only_mint_asset_name),
-          )
-        expect [_id_input] =
-          inputs_with(
-            inputs,
-            id_token_policy_id,
-            cip68_222(only_mint_asset_name),
+            cip68_100(contributer_asset_name),
           )
         expect [bounty_input] =
           inputs_at_with(
@@ -89,14 +95,20 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
             only_mint_asset_name,
           )
 
+        let owner_id_datum: ContributerDatum =
+          owner_id_ref_input.output.datum |> to_contributer_datum()
+
         let input_contributer_datum: ContributerDatum =
-          id_ref_input.output.datum |> to_contributer_datum()
+          contributor_id_ref_input.output.datum |> to_contributer_datum()
 
         let updated_ref_token_datum: ContributerDatum =
-          id_ref_output.datum |> to_contributer_datum()
+          contributor_id_ref_output.datum |> to_contributer_datum()
 
         let bounty_datum: BountyDatum =
           bounty_input.output.datum |> to_bounty_datum()
+
+        let is_owner_signed =
+          key_signed(extra_signatories, owner_id_datum.pub_key_hash)
 
         let update_check =
           updated_ref_token_datum == update_contributor_datum(
@@ -106,6 +118,7 @@ validator bounty_token(oracle_token: (PolicyId, AssetName)) {
           )
 
         and {
+          is_owner_signed?,
           only_mint_quantity == -1,
           update_check?,
         }
@@ -180,7 +193,12 @@ fn successful_burn_tx() -> Transaction {
       )
     |> tx_in_inline_datum(
         True,
-        ContributerDatum { metadata: [], version: 1, contributions: [] },
+        ContributerDatum {
+          metadata: [],
+          version: 1,
+          contributions: [],
+          pub_key_hash: mock_pub_key_hash(0),
+        },
       )
     |> tx_in(
         True,
@@ -236,6 +254,7 @@ fn successful_burn_tx() -> Transaction {
               metadata: [],
               version: 1,
               contributions: [Pair(mock_pub_key_hash(0), 100000000000)],
+              pub_key_hash: mock_pub_key_hash(0),
             },
           ),
         ),
@@ -425,7 +444,7 @@ test successful_burn_bounty_token() {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -450,13 +469,18 @@ test missing_ref_token_burn_check() fail {
         )
       |> tx_in_inline_datum(
           True,
-          ContributerDatum { metadata: [], version: 1, contributions: [] },
+          ContributerDatum {
+            metadata: [],
+            version: 1,
+            contributions: [],
+            pub_key_hash: mock_pub_key_hash(0),
+          },
         )
       |> complete()
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -483,7 +507,7 @@ test missing_id_token_burn_check() fail {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -510,7 +534,7 @@ test missing_bounty_token_burn_check() fail {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -540,7 +564,7 @@ test invalid_id_token_burn_check() fail {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -570,7 +594,7 @@ test invalid_ref_token_burn_check() fail {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -597,7 +621,7 @@ test invalid_bounty_token_burn_check() fail {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -627,6 +651,7 @@ test invalid_signatory_check() fail {
                 metadata: [],
                 version: 1,
                 contributions: [Pair(mock_pub_key_hash(2), 100000000000)],
+                pub_key_hash: mock_pub_key_hash(0),
               },
             ),
           ),
@@ -634,7 +659,7 @@ test invalid_signatory_check() fail {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -665,7 +690,7 @@ test missing_signatories() fail {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -693,13 +718,14 @@ test invalid_github() fail {
             metadata: [],
             version: 1,
             contributions: [Pair(mock_pub_key_hash(0), 100000000000)],
+            pub_key_hash: mock_pub_key_hash(0),
           },
         )
       |> complete()
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
@@ -729,6 +755,7 @@ test missing_updated_reward() fail {
                 metadata: [],
                 version: 1,
                 contributions: [Pair(mock_pub_key_hash(0), 102141)],
+                pub_key_hash: mock_pub_key_hash(0),
               },
             ),
           ),
@@ -736,7 +763,7 @@ test missing_updated_reward() fail {
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
-    bounty_redeemer,
+    bounty_redeemer("contributor"),
     mock_policy_id(0),
     tx,
   )
