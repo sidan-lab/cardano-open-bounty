@@ -49,7 +49,8 @@ test fail_mint_no_utxo_ref_supply() fail {
   let redeemer = CheckMint
   let policy_id = mock_policy_id(0)
 
-  !one_shot.mint(mock_utxo_ref(0, 0), redeemer, policy_id, placeholder)
+  let tx = Transaction { ..placeholder, mint: from_asset(policy_id, "", 1) }
+  !one_shot.mint(mock_utxo_ref(0, 0), redeemer, policy_id, tx)
 }
 
 test success_burn() {
