@@ -1,5 +1,5 @@
 import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../../aiken-workspace/plutus.json";
+import blueprint from "../../../../aiken-workspace/plutus.json";
 import {
   BlockfrostProvider,
   IWallet,
@@ -18,7 +18,7 @@ import {
   insertRedeemMultiSigApiRoute,
 } from "./api_common";
 import { ApiMiddleware } from "@/middleware/api";
-import { ContributerDatum, ContributionDatum } from "../api/type";
+import { ContributerDatum, ContributionDatum } from "./types";
 import { Contribution } from "@/services/type";
 
 export const burnBountyToken = async (

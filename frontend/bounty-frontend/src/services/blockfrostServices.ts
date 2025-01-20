@@ -3,7 +3,7 @@ import {
   OracleCounterDatum,
   ContributionDatum,
   BountyDatum,
-} from "@/pages/api/type";
+} from "@/transactions/type";
 import {
   applyParamsToScript,
   BlockfrostProvider,

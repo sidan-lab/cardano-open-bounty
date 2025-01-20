@@ -207,8 +207,7 @@ const BountyTable: React.FC = () => {
             id="rows-per-page"
             value={rowsPerPage}
             onChange={handleRowsPerPageChange}
-            className="ml-2 bg-gray-700 text-white rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
+            className="ml-2 bg-gray-700 text-white rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500">
             <option value={5}>5</option>
             <option value={10}>10</option>
             <option value={15}>15</option>
@@ -243,8 +242,7 @@ const BountyTable: React.FC = () => {
                 <tr className="bg-gray-900">
                   <td
                     className="px-6 py-4 text-sm text-gray-400 text-center"
-                    colSpan={4}
-                  >
+                    colSpan={4}>
                     No created bounties available
                   </td>
                 </tr>
@@ -252,12 +250,10 @@ const BountyTable: React.FC = () => {
                 userBounties.map((bounty, index) => (
                   <tr
                     key={index}
-                    className="bg-gray-900 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700"
-                  >
+                    className="bg-gray-900 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700">
                     <th
                       scope="row"
-                      className="px-6 py-4 font-medium text-white whitespace-nowrap"
-                    >
+                      className="px-6 py-4 font-medium text-white whitespace-nowrap">
                       {bounty.name}
                     </th>
                     <td className="px-6 py-4 text-white">
@@ -265,8 +261,7 @@ const BountyTable: React.FC = () => {
                         href={bounty.tasks}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
+                        className="text-blue-400 hover:underline">
                         {bounty.tasks}
                       </a>
                     </td>
@@ -286,26 +281,22 @@ const BountyTable: React.FC = () => {
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-white font-semibold text-base"
-              >
+                className="px-6 py-3 text-white font-semibold text-base">
                 Creator
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-white font-semibold text-base"
-              >
+                className="px-6 py-3 text-white font-semibold text-base">
                 Tasks
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-white font-semibold text-base"
-              >
+                className="px-6 py-3 text-white font-semibold text-base">
                 Reward
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-white font-semibold text-base"
-              >
+                className="px-6 py-3 text-white font-semibold text-base">
                 Actions
               </th>
             </tr>
@@ -315,8 +306,7 @@ const BountyTable: React.FC = () => {
               <tr className="bg-gray-900">
                 <td
                   className="px-6 py-4 text-sm text-gray-400 text-center"
-                  colSpan={4}
-                >
+                  colSpan={4}>
                   No bounties available
                 </td>
               </tr>
@@ -324,12 +314,10 @@ const BountyTable: React.FC = () => {
               displayedBounties.map((bounty, index) => (
                 <tr
                   key={index}
-                  className="bg-gray-900 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600"
-                >
+                  className="bg-gray-900 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600">
                   <th
                     scope="row"
-                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap text-white"
-                  >
+                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap text-white">
                     {bounty.name}
                   </th>
                   <td className="px-6 py-4 text-white">
@@ -337,8 +325,7 @@ const BountyTable: React.FC = () => {
                       href={bounty.tasks}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline"
-                    >
+                      className="text-blue-400 hover:underline">
                       {bounty.tasks}
                     </a>
                   </td>
@@ -357,8 +344,7 @@ const BountyTable: React.FC = () => {
           <button
             onClick={() => setCurrentPage((curr) => Math.max(1, curr - 1))}
             disabled={currentPage === 1}
-            className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-4 py-2 transition"
-          >
+            className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-4 py-2 transition">
             Previous
           </button>
           <span className="text-gray-300">
@@ -377,8 +363,7 @@ const BountyTable: React.FC = () => {
                 ? Math.ceil(userBounties.length / rowsPerPage)
                 : Math.ceil(bounties.length / rowsPerPage))
             }
-            className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-4 py-2 transition"
-          >
+            className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-4 py-2 transition">
             Next
           </button>
         </div>

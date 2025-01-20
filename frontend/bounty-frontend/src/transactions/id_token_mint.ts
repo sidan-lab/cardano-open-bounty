@@ -1,5 +1,5 @@
 import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../../aiken-workspace/plutus.json";
+import blueprint from "../../../../aiken-workspace/plutus.json";
 import {
   BlockfrostProvider,
   IWallet,
@@ -17,7 +17,7 @@ import {
 } from "@meshsdk/core";
 import { getUtxoApiRoute, updateUtxoApiRoute } from "./api_common";
 import { ApiMiddleware } from "@/middleware/api";
-import { ContributerDatum, OracleCounterDatum } from "../api/type";
+import { ContributerDatum, OracleCounterDatum } from "./types";
 
 export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
   if (!wallet) {
