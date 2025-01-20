@@ -8,13 +8,9 @@ pub type Action {
 }
 
 pub type ContributerDatum {
-  github: String,
-  contributions: List<Contribution>,
-}
-
-pub type Contribution {
-  all_signatories: List<VerificationKeyHash>,
-  reward: Int,
+  metadata: Pairs<Data, Data>,
+  version: Int,
+  contributions: Pairs<VerificationKeyHash, Int>,
 }
 
 pub fn to_contributer_datum(data: Datum) -> ContributerDatum {

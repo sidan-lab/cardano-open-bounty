@@ -35,10 +35,14 @@ validator id_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
         inputs_with(inputs, policy_id, nft_asset_name),
       )
     is {
-      ([_], [_]) -> {
+      ([bounty_input], [_]) -> {
         let is_ref_token_name_correct =
           ref_asset_name |> bytearray.starts_with(prefix: cip.cip68_100_prefix)
-        is_ref_token_name_correct?
+        expect [(only_burn_policy, _, only_burn_quantity)] =
+          value_tokens(bounty_input.output.value)
+        let is_bounty_completed =
+          only_burn_policy == bounty_token_policy_id && only_burn_quantity == -1
+        is_ref_token_name_correct? && is_bounty_completed?
       }
       _ -> False
     }
@@ -108,7 +112,7 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
       )
     |> tx_in_inline_datum(
         is_id_nft_check,
-        ContributerDatum { github: @"abc", contributions: [] },
+        ContributerDatum { metadata: [], version: 1, contributions: [] },
       )
     |> tx_in(
         is_bounty_nft_check,

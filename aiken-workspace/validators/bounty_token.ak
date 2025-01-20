@@ -1,22 +1,21 @@
-use aiken/collection/dict
-use aiken/collection/list
-use aiken/primitive/bytearray.{starts_with}
 use bounty_token_type.{
   Action, BountyDatum, CheckBurn, CheckMint, to_bounty_datum,
 }
 use cardano/address.{from_script}
 use cardano/assets.{
-  AssetName, PolicyId, flatten, from_asset, from_lovelace, lovelace_of, merge,
-  without_lovelace,
+  AssetName, PolicyId, add, from_asset, from_lovelace, lovelace_of, merge,
 }
 use cardano/transaction.{InlineDatum, Input, Transaction} as tx
-use cip.{cip68_100_prefix, cip68_222_prefix}
-use cocktail.{all_key_signed, inputs_with_policy, outputs_at_with}
-use identity_token_type.{ContributerDatum, Contribution, to_contributer_datum}
+use cip.{cip68_100, cip68_222}
+use cocktail.{inputs_at_with, outputs_at_with, value_tokens}
+use cocktail/vodka_inputs.{inputs_with}
+use identity_token_type.{ContributerDatum, to_contributer_datum}
+use identity_token_util.{is_token_provided, update_contributor_datum}
 use mocktail.{
   MocktailTx, add_extra_signatory, add_output, complete, mint, mock_policy_id,
   mock_pub_key_address, mock_pub_key_hash, mock_script_output, mock_tx_hash,
   mocktail_tx, ref_tx_in, ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
+  tx_out, tx_out_inline_datum,
 }
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
@@ -24,149 +23,94 @@ use oracle_token_util.{get_oracle_nft_datum}
 validator bounty_token(oracle_token: (PolicyId, AssetName)) {
   mint(redeemer: Action, policy_id: PolicyId, transaction: Transaction) {
     // destructure the transaction
-    let Transaction {
-      inputs,
-      mint,
-      outputs,
-      reference_inputs,
-      extra_signatories,
+    let Transaction { inputs, mint, outputs, reference_inputs, .. } =
+      transaction
+
+    expect [(_, only_mint_asset_name, only_mint_quantity)] = value_tokens(mint)
+
+    let OracleDatum {
+      bounty_token_policy_id,
+      bounty_board_address,
+      id_token_policy_id,
+      id_token_store_address,
       ..
-    } = transaction
-
-    expect [Pair(_, amount)] =
-      mint
-        |> assets.tokens(policy_id)
-        |> dict.to_pairs()
-
-    let oracle_input_datum: OracleDatum =
-      reference_inputs |> get_oracle_nft_datum(oracle_token)
+    }: OracleDatum = reference_inputs |> get_oracle_nft_datum(oracle_token)
 
     //check redeemer
-    let redeemer_check =
-      when redeemer is {
-        CheckMint -> {
-          expect [bounty_nft_output] =
-            outputs_at_with(
-              outputs,
-              oracle_input_datum.bounty_board_address,
-              policy_id,
-              "",
-            )
+    when redeemer is {
+      CheckMint -> {
+        expect [bounty_nft_output] =
+          outputs_at_with(
+            outputs,
+            bounty_board_address,
+            policy_id,
+            only_mint_asset_name,
+          )
 
-          let datum = bounty_nft_output.datum |> to_bounty_datum()
-          let datum_check =
-            (lovelace_of(bounty_nft_output.value) >= datum.reward)?
+        let datum = bounty_nft_output.datum |> to_bounty_datum()
+        let is_bounty_reward_provided =
+          (lovelace_of(bounty_nft_output.value) >= datum.reward)?
 
-          // expect id token policy id == bounty token policy id
-          expect [_id_nft_input] =
-            inputs_with_policy(inputs, oracle_input_datum.id_token_policy_id)
+        let is_id_token_provided =
+          is_token_provided(
+            inputs,
+            id_token_policy_id,
+            cip68_222(only_mint_asset_name),
+          )
 
-          datum_check?
-        }
-        CheckBurn -> {
-          expect [input0,
-            input1] =
-            inputs
-              |> list.filter(
-                  fn(input) {
-                    when
-                      input.output.value
-                        |> flatten()
-                        |> list.find(
-                            fn((policy, _, _)) {
-                              policy == oracle_input_datum.id_token_policy_id
-                            },
-                          )
-                    is {
-                      Some(_) -> True
-                      _ -> False
-                    }
-                  },
-                )
+        is_bounty_reward_provided? && is_id_token_provided?
+      }
+      CheckBurn -> {
+        expect [id_ref_input] =
+          inputs_at_with(
+            inputs,
+            id_token_store_address,
+            id_token_policy_id,
+            cip68_100(only_mint_asset_name),
+          )
+        expect [id_ref_output] =
+          outputs_at_with(
+            outputs,
+            id_token_store_address,
+            id_token_policy_id,
+            cip68_100(only_mint_asset_name),
+          )
+        expect [_id_input] =
+          inputs_with(
+            inputs,
+            id_token_policy_id,
+            cip68_222(only_mint_asset_name),
+          )
+        expect [bounty_input] =
+          inputs_at_with(
+            inputs,
+            bounty_board_address,
+            bounty_token_policy_id,
+            only_mint_asset_name,
+          )
 
-          // expect [(input0_policy_id, input0_asset_name, 1)] =
-          //   input0.output.value |> without_lovelace() |> flatten()
-          // expect [(input1_policy_id, input1_asset_name, 1)] =
-          //   input1.output.value |> without_lovelace() |> flatten()
-          // let input0_asset_name_raw = input0_asset_name |> bytearray.drop(4)
-          // let input1_asset_name_raw = input1_asset_name |> bytearray.drop(4)
-          // let prefix_check =
-          //   if input0_asset_name |> starts_with(cip68_100_prefix) {
-          //     input1_asset_name |> starts_with(cip68_222_prefix)
-          //   } else if input0_asset_name |> starts_with(cip68_222_prefix) {
-          //     input1_asset_name |> starts_with(cip68_100_prefix)
-          //   } else {
-          //     False
-          //   }
-          expect [id_ref_input] =
-            [input0, input1]
-              |> list.filter(
-                  fn(input) {
-                    expect [(_, asset_name, 1)] =
-                      input.output.value |> without_lovelace() |> flatten()
-                    asset_name |> starts_with(cip68_100_prefix)
-                  },
-                )
+        let input_contributer_datum: ContributerDatum =
+          id_ref_input.output.datum |> to_contributer_datum()
 
-          expect [_id_input] =
-            [input0, input1]
-              |> list.filter(
-                  fn(input) {
-                    expect [(_, asset_name, 1)] =
-                      input.output.value |> without_lovelace() |> flatten()
+        let updated_ref_token_datum: ContributerDatum =
+          id_ref_output.datum |> to_contributer_datum()
 
-                    asset_name |> starts_with(cip68_222_prefix)
-                  },
-                )
-          expect Some(bounty_input) =
-            inputs
-              |> list.find(
-                  fn(input) {
-                    expect [(policy, _, 1)] = input.output.value |> flatten()
-                    policy == oracle_input_datum.bounty_token_policy_id
-                  },
-                )
+        let bounty_datum: BountyDatum =
+          bounty_input.output.datum |> to_bounty_datum()
 
-          let input_contributer_datum: ContributerDatum =
-            id_ref_input.output.datum |> to_contributer_datum()
+        let update_check =
+          updated_ref_token_datum == update_contributor_datum(
+            input_contributer_datum,
+            only_mint_asset_name,
+            bounty_datum.reward,
+          )
 
-          expect Some(id_ref_output) =
-            outputs
-              |> list.find(
-                  fn(output) {
-                    output.address == oracle_input_datum.id_token_store_address && output.value == id_ref_input.output.value
-                  },
-                )
-
-          let updated_ref_token_datum: ContributerDatum =
-            id_ref_output.datum |> to_contributer_datum()
-
-          let bounty_datum: BountyDatum =
-            bounty_input.output.datum |> to_bounty_datum()
-
-          let update_check =
-            updated_ref_token_datum == ContributerDatum {
-              github: input_contributer_datum.github,
-              contributions: input_contributer_datum.contributions
-                |> list.push(
-                    Contribution {
-                      all_signatories: bounty_datum.all_signatories,
-                      reward: bounty_datum.reward,
-                    },
-                  ),
-            }
-
-          let signatories_check =
-            all_key_signed(bounty_datum.all_signatories, extra_signatories)
-
-          and {
-            amount == -1,
-            signatories_check?,
-            update_check?,
-          }
+        and {
+          only_mint_quantity == -1,
+          update_check?,
         }
       }
-    redeemer_check
+    }
   }
 
   else(_) {
@@ -216,13 +160,7 @@ fn successful_mint_tx() -> Transaction {
             from_lovelace(100000000000),
             from_asset(mock_policy_id(0), "", 1),
           ),
-          InlineDatum(
-            BountyDatum {
-              issue_url: [],
-              reward: 100000000000,
-              all_signatories: [mock_pub_key_hash(0)],
-            },
-          ),
+          InlineDatum(BountyDatum { issue_url: [], reward: 100000000000 }),
         ),
       )
 }
@@ -242,7 +180,7 @@ fn successful_burn_tx() -> Transaction {
       )
     |> tx_in_inline_datum(
         True,
-        ContributerDatum { github: @"abc", contributions: [] },
+        ContributerDatum { metadata: [], version: 1, contributions: [] },
       )
     |> tx_in(
         True,
@@ -263,11 +201,7 @@ fn successful_burn_tx() -> Transaction {
       )
     |> tx_in_inline_datum(
         True,
-        BountyDatum {
-          issue_url: [],
-          reward: 100000000000,
-          all_signatories: [mock_pub_key_hash(0), mock_pub_key_hash(1)],
-        },
+        BountyDatum { issue_url: [], reward: 100000000000 },
       )
     |> ref_tx_in(
         True,
@@ -299,13 +233,9 @@ fn successful_burn_tx() -> Transaction {
           ),
           InlineDatum(
             ContributerDatum {
-              github: @"abc",
-              contributions: [
-                Contribution {
-                  all_signatories: [mock_pub_key_hash(0), mock_pub_key_hash(1)],
-                  reward: 100000000000,
-                },
-              ],
+              metadata: [],
+              version: 1,
+              contributions: [Pair(mock_pub_key_hash(0), 100000000000)],
             },
           ),
         ),
@@ -378,13 +308,7 @@ test invalid_id_tkn() fail {
               from_lovelace(100000000000),
               from_asset(mock_policy_id(1), "bcd", 1),
             ),
-            InlineDatum(
-              BountyDatum {
-                issue_url: [],
-                reward: 100000000000,
-                all_signatories: [mock_pub_key_hash(0)],
-              },
-            ),
+            InlineDatum(BountyDatum { issue_url: [], reward: 100000000000 }),
           ),
         )
 
@@ -418,13 +342,7 @@ test no_lovelace() fail {
           mock_script_output(
             from_script("bounty_board_hold"),
             from_asset(mock_policy_id(0), "abc", 1),
-            InlineDatum(
-              BountyDatum {
-                issue_url: [],
-                reward: 100000000000,
-                all_signatories: [mock_pub_key_hash(0)],
-              },
-            ),
+            InlineDatum(BountyDatum { issue_url: [], reward: 100000000000 }),
           ),
         )
   bounty_token.mint(
@@ -460,13 +378,7 @@ test lesser_lovelace() fail {
               from_lovelace(100000),
               from_asset(mock_policy_id(0), "abc", 1),
             ),
-            InlineDatum(
-              BountyDatum {
-                issue_url: [],
-                reward: 100000000000,
-                all_signatories: [mock_pub_key_hash(0)],
-              },
-            ),
+            InlineDatum(BountyDatum { issue_url: [], reward: 100000000000 }),
           ),
         )
   bounty_token.mint(
@@ -495,13 +407,7 @@ test invalid_address() fail {
               from_lovelace(100000000000),
               from_asset(mock_policy_id(0), "abc", 1),
             ),
-            InlineDatum(
-              BountyDatum {
-                issue_url: [],
-                reward: 100000000000,
-                all_signatories: [mock_pub_key_hash(0)],
-              },
-            ),
+            InlineDatum(BountyDatum { issue_url: [], reward: 100000000000 }),
           ),
         )
   bounty_token.mint(
@@ -544,7 +450,7 @@ test missing_ref_token_burn_check() fail {
         )
       |> tx_in_inline_datum(
           True,
-          ContributerDatum { github: @"abc", contributions: [] },
+          ContributerDatum { metadata: [], version: 1, contributions: [] },
         )
       |> complete()
 
@@ -718,16 +624,9 @@ test invalid_signatory_check() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                github: @"abc",
-                contributions: [
-                  Contribution {
-                    all_signatories: [
-                      mock_pub_key_hash(2),
-                      mock_pub_key_hash(3),
-                    ],
-                    reward: 100000000000,
-                  },
-                ],
+                metadata: [],
+                version: 1,
+                contributions: [Pair(mock_pub_key_hash(2), 100000000000)],
               },
             ),
           ),
@@ -760,16 +659,7 @@ test missing_signatories() fail {
         )
       |> tx_in_inline_datum(
           True,
-          BountyDatum {
-            issue_url: [],
-            reward: 100000000000,
-            all_signatories: [
-              mock_pub_key_hash(0),
-              mock_pub_key_hash(1),
-              mock_pub_key_hash(2),
-              mock_pub_key_hash(3),
-            ],
-          },
+          BountyDatum { issue_url: [], reward: 100000000000 },
         )
       |> complete()
 
@@ -791,31 +681,21 @@ test invalid_github() fail {
       queue_output: None,
       queue_ref_input: None,
     }
-      |> complete()
-      |> add_output(
+      |> tx_out(
           True,
-          mock_script_output(
-            from_script("ref_token_hold"),
-            merge(
-              from_lovelace(100000000000),
-              from_asset(mock_policy_id(0), cip.cip68_100("id"), 1),
-            ),
-            InlineDatum(
-              ContributerDatum {
-                github: @"wrong_abc",
-                contributions: [
-                  Contribution {
-                    all_signatories: [
-                      mock_pub_key_hash(0),
-                      mock_pub_key_hash(1),
-                    ],
-                    reward: 100000000000,
-                  },
-                ],
-              },
-            ),
-          ),
+          from_script("ref_token_hold"),
+          from_lovelace(100000000000)
+            |> add(mock_policy_id(0), cip.cip68_100("id"), 1),
         )
+      |> tx_out_inline_datum(
+          True,
+          ContributerDatum {
+            metadata: [],
+            version: 1,
+            contributions: [Pair(mock_pub_key_hash(0), 100000000000)],
+          },
+        )
+      |> complete()
 
   bounty_token.mint(
     (mock_policy_id(0), "oracle"),
@@ -846,16 +726,9 @@ test missing_updated_reward() fail {
             ),
             InlineDatum(
               ContributerDatum {
-                github: @"abc",
-                contributions: [
-                  Contribution {
-                    all_signatories: [
-                      mock_pub_key_hash(0),
-                      mock_pub_key_hash(1),
-                    ],
-                    reward: 102141,
-                  },
-                ],
+                metadata: [],
+                version: 1,
+                contributions: [Pair(mock_pub_key_hash(0), 102141)],
               },
             ),
           ),

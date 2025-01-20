@@ -9,9 +9,10 @@ use cardano/transaction.{InlineDatum,
   OutputReference, Transaction, find_input} as tx
 use cip.{cip68_222}
 use cocktail.{
-  all_key_signed, convert_int_to_bytes, inputs_at, only_minted_token,
-  outputs_at_with,
+  convert_int_to_bytes, inputs_at, only_minted_token, outputs_at_with,
+  value_tokens,
 }
+use identity_token_util.{is_token_provided}
 use mocktail.{
   add_extra_signatory, add_output, complete, mock_policy_id,
   mock_pub_key_address, mock_pub_key_hash, mock_script_output, mock_tx_hash,
@@ -32,14 +33,8 @@ validator bounty_board(oracle_nft: (PolicyId, AssetName)) {
     input: OutputReference,
     transaction: Transaction,
   ) {
-    let Transaction {
-      mint,
-      outputs,
-      inputs,
-      reference_inputs,
-      extra_signatories,
-      ..
-    } = transaction
+    let Transaction { mint, outputs, inputs, reference_inputs, .. } =
+      transaction
 
     let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
@@ -49,33 +44,34 @@ validator bounty_board(oracle_nft: (PolicyId, AssetName)) {
       inputs_at(inputs, own_input.output.address) |> list.length()
 
     let is_only_one_script_input = script_inputs == 1
+    expect [(_, asset_name, _)] = own_input.output.value |> value_tokens()
 
     when redeemer is {
       UpdateBounty -> {
-        let old_bounty_datum: BountyDatum =
-          own_input.output.datum |> to_bounty_datum()
-        let signatories_check =
-          all_key_signed(extra_signatories, old_bounty_datum.all_signatories)
-
         expect [bounty_board_output] =
           outputs_at_with(
             outputs,
             oracle_input_datum.bounty_board_address,
             oracle_input_datum.bounty_token_policy_id,
-            "",
+            asset_name,
           )
 
+        let is_id_token_provided =
+          is_token_provided(
+            inputs,
+            oracle_input_datum.id_token_policy_id,
+            cip68_222(asset_name),
+          )
         let datum = bounty_board_output.datum |> to_bounty_datum()
         let datum_check =
           (lovelace_of(bounty_board_output.value) >= datum.reward)?
-        is_only_one_script_input? && signatories_check? && datum_check
+        is_id_token_provided? && is_only_one_script_input? && datum_check
       }
       RedeemBounty ->
-        // is_only_one_script_input? &&
         only_minted_token(
           mint,
           oracle_input_datum.bounty_token_policy_id,
-          "",
+          asset_name,
           -1,
         )
     }
@@ -130,11 +126,7 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
       )
     |> tx_in_inline_datum(
         is_redeemer_check,
-        BountyDatum {
-          issue_url: [],
-          reward: 100000000000,
-          all_signatories: [mock_pub_key_hash(0), mock_pub_key_hash(1)],
-        },
+        BountyDatum { issue_url: [], reward: 100000000000 },
       )
     |> tx_in(
         !is_input_check,
@@ -159,17 +151,7 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
             from_lovelace(100000000000),
             from_asset(mock_policy_id(0), "", 1),
           ),
-          InlineDatum(
-            BountyDatum {
-              issue_url: [],
-              reward: 100000000000,
-              all_signatories: [
-                mock_pub_key_hash(0),
-                mock_pub_key_hash(1),
-                mock_pub_key_hash(2),
-              ],
-            },
-          ),
+          InlineDatum(BountyDatum { issue_url: [], reward: 100000000000 }),
         ),
       )
 }

@@ -58,7 +58,7 @@ validator identity_token(
           )
 
         let datum = ref_output.datum |> to_contributer_datum()
-        let datum_check = (datum.github != @"")? && (datum.contributions == [])?
+        let datum_check = datum.contributions == []
 
         are_tokens_nfts? && datum_check?
       }
@@ -146,7 +146,9 @@ fn mock_mint_tx(
             1,
           ),
           if is_datum_check {
-            InlineDatum(ContributerDatum { github: @"abc", contributions: [] })
+            InlineDatum(
+              ContributerDatum { metadata: [], version: 1, contributions: [] },
+            )
           } else {
             InlineDatum(mock_oracle_datum)
           },
