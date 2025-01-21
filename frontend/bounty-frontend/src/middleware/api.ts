@@ -1,7 +1,7 @@
-import { CIP68_100, IWallet } from "@meshsdk/core";
+import { CIP68_100, hexToString, IWallet } from "@meshsdk/core";
 import { UserWalletService } from "@/services/walletServices";
 import { BlockfrostService } from "@/services/blockfrostServices";
-import { Contribution } from "@/services/type";
+import { Contributor, GitHub } from "@/transactions/types";
 
 export class ApiMiddleware {
   wallet: UserWalletService;
@@ -77,30 +77,42 @@ export class ApiMiddleware {
     tx_hash: string | null,
     outputIndex: number | null
   ): Promise<{
+    tokenName: string;
     gitHub: string;
-    contributions: Contribution[];
+    contributions: Map<string, number>;
   }> => {
     try {
-      if (!tx_hash) {
-        const { policyId, assetName } = await this.wallet.getIdToken();
+      // if (!tx_hash) {
+      const { policyId, assetName } = await this.wallet.getIdToken();
 
-        const refAssetName = CIP68_100(assetName.slice(3));
-        const { txHash, index } = await this.blockFrost.getIdRefTxHash(
-          policyId,
-          refAssetName
-        );
-        const { gitHub, contributions } = await this.blockFrost.getIdTokenDatum(
-          txHash,
-          index
-        );
-        return { gitHub, contributions };
-      } else {
-        const { gitHub, contributions } = await this.blockFrost.getIdTokenDatum(
-          tx_hash,
-          outputIndex!
-        );
-        return { gitHub, contributions };
-      }
+      const refAssetName = CIP68_100(assetName.slice(8));
+
+      const { txHash, index } = await this.blockFrost.getIdRefTxHash(
+        policyId,
+        refAssetName
+      );
+      const contributor: Contributor = await this.blockFrost.getIdTokenDatum(
+        txHash,
+        index
+      );
+
+      const tokenName: string = hexToString(assetName.slice(8));
+      const gitHub: string = contributor.metadata.get(GitHub)!;
+
+      const contributions: Map<string, number> = contributor.contributions;
+      return { tokenName, gitHub, contributions };
+      // }
+      // else {
+      //   const contributor: Contributor = await this.blockFrost.getIdTokenDatum(
+      //     tx_hash,
+      //     outputIndex!
+      //   );
+
+      //   const gitHub: string = contributor.metadata.get(GitHub)!;
+
+      //   const contributions: Map<string, number> = contributor.contributions;
+      //   return { gitHub, contributions };
+      // }
     } catch (error) {
       console.error("Error getting id info :", error);
       throw error;

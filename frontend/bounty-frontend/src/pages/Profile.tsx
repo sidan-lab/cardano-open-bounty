@@ -9,6 +9,7 @@ import {
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import Footer from "@/components/Footer";
+import { ApiMiddleware } from "@/middleware/api";
 
 const Profile: React.FC = () => {
   const basenavigation = [
@@ -45,13 +46,19 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     const getWalletBalance = async () => {
+      const api = new ApiMiddleware(wallet);
+      const { tokenName, gitHub, contributions } = await api.getIdInfo(
+        null,
+        null
+      );
+
       const balance = await wallet.getLovelace();
       setUserBalance(balance);
 
       // Simulating fetching user token and contributions
-      setUserToken("ExampleIDToken");
+      setUserToken(tokenName);
       setUserContributions(3);
-      setUserGithubUrl("https://github.com/exampleUser");
+      setUserGithubUrl(gitHub);
     };
 
     if (connected) {

@@ -18,6 +18,7 @@ import {
   pubKeyHash,
   stringToHex,
   byteString,
+  hexToString,
 } from "@meshsdk/common";
 
 export type OracleNFTDatum = ConStr0<
@@ -186,7 +187,7 @@ export function convertOracleCounterDatum(
 }
 
 export function convertBountyDatum(datum: BountyDatum): Bounty {
-  const issue_url: string = datum.fields[0].bytes;
+  const issue_url: string = hexToString(datum.fields[0].bytes);
   const reward: number = Number(datum.fields[1].int);
   return {
     issue_url: issue_url,
@@ -196,13 +197,14 @@ export function convertBountyDatum(datum: BountyDatum): Bounty {
 
 export function convertContributorDatum(datum: ContributorDatum): Contributor {
   const metadata: Map<string, string> = new Map();
+
   datum.fields[0].map.forEach((item) => {
-    metadata.set(item.k.bytes, item.v.bytes);
+    metadata.set(hexToString(item.k.bytes), hexToString(item.v.bytes));
   });
 
   const contributions: Map<string, number> = new Map();
   datum.fields[2].map.forEach((item) => {
-    contributions.set(item.k.bytes, Number(item.v.int));
+    contributions.set(hexToString(item.k.bytes), Number(item.v.int));
   });
 
   const version: number = Number(datum.fields[1].int);

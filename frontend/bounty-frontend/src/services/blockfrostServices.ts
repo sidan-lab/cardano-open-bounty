@@ -1,8 +1,4 @@
-import {
-  BlockfrostProvider,
-  deserializeDatum,
-  stringToHex,
-} from "@meshsdk/core";
+import { BlockfrostProvider, deserializeDatum } from "@meshsdk/core";
 import { AddressUtxo, AssetTransaction, BountyWithName } from "./type";
 import {
   Bounty,
@@ -50,7 +46,7 @@ export class BlockfrostService {
     policyId: string,
     assetName: string
   ): Promise<{ txHash: string; index: number }> => {
-    const asset = policyId + stringToHex(assetName);
+    const asset = policyId + assetName;
     const url = `/assets/${asset}/transactions`;
     try {
       const assetTransactions: AssetTransaction[] = await this.blockFrost.get(
@@ -72,7 +68,7 @@ export class BlockfrostService {
     policyId: string,
     assetName: string
   ): Promise<{ txHash: string; index: number }> => {
-    const asset = policyId + stringToHex(assetName);
+    const asset = policyId + assetName;
     const url = `/assets/${asset}/transactions`;
     try {
       const assetTransactions: AssetTransaction[] = await this.blockFrost.get(
@@ -81,7 +77,7 @@ export class BlockfrostService {
 
       const txHash = assetTransactions[0].tx_hash;
 
-      const index = assetTransactions[0].tx_index;
+      const index = 1;
 
       return { txHash, index };
     } catch (error) {
@@ -102,6 +98,8 @@ export class BlockfrostService {
       const datum: ContributorDatum = deserializeDatum(plutusData);
 
       const contributor: Contributor = convertContributorDatum(datum);
+
+      console.log(contributor);
 
       return contributor;
     } catch (error) {
