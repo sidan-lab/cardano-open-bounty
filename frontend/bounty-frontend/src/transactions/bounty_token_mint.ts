@@ -93,10 +93,7 @@ export const mintBountyToken = async (
         {
           unit: idMintingPolicyId + CIP68_222(stringToHex(tokenName)),
           quantity: "1",
-        },
-      ])
-      .txOut(bountyBoardScriptAddress, [
-        {
+        }, {
           unit: "lovelace",
           quantity: (reward * 1000000).toString(),
         },
