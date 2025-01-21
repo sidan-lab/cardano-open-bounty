@@ -193,9 +193,7 @@ const BountyTable: React.FC = () => {
         </button>
         <div className="flex space-x-2">
           {!hasIDToken && <CreateIDToken />}
-          {connected && hasIDToken && (
-            <CreateBountyToken onCreateBounty={handleCreateBounty} />
-          )}
+          {true && true && <CreateBountyToken />}
         </div>
       </div>
 

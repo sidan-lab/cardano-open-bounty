@@ -9,13 +9,7 @@ interface Bounty {
   reward: number;
 }
 
-interface CreateBountyTokenProps {
-  onCreateBounty: (bounty: Bounty) => void;
-}
-
-const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
-  onCreateBounty,
-}) => {
+const CreateBountyToken: React.FC = () => {
   const [formVisible, setFormVisible] = useState(false);
   const [, setIsLoading] = useState(false);
   const { wallet, connected } = useWallet();
@@ -53,39 +47,39 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
     e.preventDefault();
     setIsLoading(true);
 
-    async function performTransaction(): Promise<boolean> {
-      const success = true;
-      return success;
-    }
+    // async function performTransaction(): Promise<boolean> {
+    //   const success = true;
+    //   return success;
+    // }
 
-    const transactionSuccessful = await performTransaction();
+    // const transactionSuccessful = await performTransaction();
     setIsLoading(false);
 
-    if (transactionSuccessful) {
-      onCreateBounty(newBounty);
+    // if (transactionSuccessful) {
+    // onCreateBounty(newBounty);
+    setNewBounty({
+      // name: newBounty.name,
+      tasks: newBounty.tasks,
+      reward: newBounty.reward,
+      // required_signatories: newBounty.required_signatories,
+    });
+    try {
+      // await mintBountyToken(newBounty.tasks, newBounty.reward, wallet);
+      console.log("Minted Bounty Token with issue URL:", newBounty.tasks);
+
       setNewBounty({
         // name: newBounty.name,
-        tasks: newBounty.tasks,
-        reward: newBounty.reward,
+        tasks: "",
+        reward: 100,
         // required_signatories: newBounty.required_signatories,
       });
-      try {
-        await mintBountyToken(newBounty.tasks, newBounty.reward, wallet);
-        console.log("Minted Bounty Token with issue URL:", newBounty.tasks);
-
-        setNewBounty({
-          // name: newBounty.name,
-          tasks: "",
-          reward: 100,
-          // required_signatories: newBounty.required_signatories,
-        });
-        setFormVisible(false);
-      } catch (error) {
-        console.error("Error minting ID token:", error);
-      }
-    } else {
-      console.error("Transaction failed");
+      setFormVisible(false);
+    } catch (error) {
+      console.error("Error minting ID token:", error);
     }
+    // } else {
+    //   console.error("Transaction failed");
+    // }
   };
 
   return (
