@@ -16,7 +16,7 @@ import {
   getMultiSigTxApiRoute,
   getUtxoApiRoute,
   insertRedeemMultiSigApiRoute,
-} from "./api_common";
+} from "../pages/common/api_common";
 import { ApiMiddleware } from "@/middleware/api";
 import { ContributerDatum, ContributionDatum } from "./types";
 import { Contribution } from "@/services/type";

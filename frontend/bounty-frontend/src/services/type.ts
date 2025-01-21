@@ -18,3 +18,9 @@ export type AddressUtxo = {
   inline_datum: string | null;
   reference_script_hash: string | null;
 };
+
+export type BountyWithName = {
+  name: string;
+  issue_url: string;
+  reward: number;
+};

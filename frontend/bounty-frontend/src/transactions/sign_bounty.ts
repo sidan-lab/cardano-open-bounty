@@ -3,7 +3,7 @@ import {
   deleteMultiSigApiRoute,
   getMultiSigApiRoute,
   updateMultiSigApiRoute,
-} from "./api_common";
+} from "../pages/common/api_common";
 
 export const signBountyToken = async (
   bounty_name: string,

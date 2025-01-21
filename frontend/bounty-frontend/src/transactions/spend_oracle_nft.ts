@@ -1,18 +1,24 @@
-import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../aiken-workspace/plutus.json";
+import { OfflineEvaluator } from "@meshsdk/core-csl";
 import {
   BlockfrostProvider,
   IWallet,
   MeshTxBuilder,
-  resolveScriptHash,
   stringToHex,
   deserializeAddress,
-  applyCborEncoding,
-  serializePlutusScript,
-  mTuple,
-  // MaestroProvider,
 } from "@meshsdk/core";
-import { getUtxoApiRoute, updateUtxoApiRoute } from "./api_common";
+import {
+  getUtxoApiRoute,
+  updateUtxoApiRoute,
+} from "../pages/common/api_common";
+import {
+  getBountyBoardScriptHash,
+  getBountyMintingPolicyId,
+  getIdMintingPolicyId,
+  getIdSpendingScriptHash,
+  getOracleNFTAddress,
+  getOracleNFTSpendingScriptCbor,
+} from "./common";
+import { actionUpdate, oracleNFTDatum, OracleNFTDatum } from "./types";
 
 export const spendOracleNFT = async (wallet: IWallet) => {
   if (!wallet) {
@@ -29,12 +35,6 @@ export const spendOracleNFT = async (wallet: IWallet) => {
     process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY
   );
 
-  // const blockchainProvider = new MaestroProvider({
-  //   network: "Preprod", // Mainnet / Preprod / Preview
-  //   apiKey: "4a3JlXtGo8ASQg8lYP9h0X1X3qX3GjMD", // Get key at https://docs.gomaestro.org/
-  //   turboSubmit: false, // Read about paid turbo transaction submission feature at https://docs.gomaestro.org
-  // });
-
   const txBuilder: MeshTxBuilder = new MeshTxBuilder({
     fetcher: blockfrost,
     submitter: blockfrost,
@@ -47,133 +47,21 @@ export const spendOracleNFT = async (wallet: IWallet) => {
   const usedAddress = (await wallet.getUsedAddresses())[0];
   const { pubKeyHash } = deserializeAddress(usedAddress);
 
-  const OracleNFTSpendingScriptCbor = applyCborEncoding(
-    blueprint.validators[16]!.compiledCode
+  const oracleNFTMintingScriptCbor = getOracleNFTSpendingScriptCbor();
+  const oracleNFTAddress = getOracleNFTAddress();
+
+  const bountyMintingPolicyId = getBountyMintingPolicyId();
+  const bountyBoardScriptAddress = getBountyBoardScriptHash();
+  const idMintingPolicyId = getIdMintingPolicyId();
+  const idSpendingScriptAddress = getIdSpendingScriptHash();
+
+  const oracleDatum: OracleNFTDatum = oracleNFTDatum(
+    bountyMintingPolicyId,
+    bountyBoardScriptAddress,
+    idMintingPolicyId,
+    idSpendingScriptAddress,
+    pubKeyHash
   );
-
-  const OracleNFTAddress = serializePlutusScript(
-    {
-      code: OracleNFTSpendingScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
-
-  const idSpendingScriptCbor = applyParamsToScript(
-    blueprint.validators[7]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
-
-  const idMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[5]!.compiledCode,
-    [
-      stringToHex(`${process.env.NEXT_PUBLIC_COLLECTION_NAME!}`),
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-      process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_POLICY_ID!,
-    ],
-    "Mesh"
-  );
-
-  const bountyBoardScriptCbor = applyParamsToScript(
-    blueprint.validators[1]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
-
-  const bountyMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[3]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
-
-  const idMintingPolicyId = resolveScriptHash(idMintingScriptCbor, "V3");
-  const bountyMintingPolicyId = resolveScriptHash(
-    bountyMintingScriptCbor,
-    "V3"
-  );
-
-  const oracleDatum = JSON.stringify({
-    constructor: 0,
-    fields: [
-      {
-        bytes: bountyMintingPolicyId,
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 1,
-            fields: [
-              {
-                bytes: resolveScriptHash(bountyBoardScriptCbor, "V3"),
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-      {
-        bytes: idMintingPolicyId,
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 1,
-            fields: [
-              {
-                bytes: resolveScriptHash(idSpendingScriptCbor, "V3"),
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 0,
-            fields: [
-              {
-                bytes: pubKeyHash,
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-    ],
-  });
 
   try {
     const { oracleTxHash, oracleOutputIndex } = await getUtxoApiRoute(
@@ -183,16 +71,10 @@ export const spendOracleNFT = async (wallet: IWallet) => {
     const unsignedTx = await txBuilder
       .spendingPlutusScriptV3()
       .txIn(oracleTxHash, oracleOutputIndex)
-      .txInRedeemerValue(
-        JSON.stringify({
-          constructor: 0,
-          fields: [],
-        }),
-        "JSON"
-      )
-      .txInScript(OracleNFTSpendingScriptCbor)
+      .txInRedeemerValue(actionUpdate, "JSON")
+      .txInScript(oracleNFTMintingScriptCbor)
       .txInInlineDatumPresent()
-      .txOut(OracleNFTAddress, [
+      .txOut(oracleNFTAddress, [
         {
           unit:
             process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID! +

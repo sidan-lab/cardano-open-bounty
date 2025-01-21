@@ -1,25 +1,41 @@
-import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../aiken-workspace/plutus.json";
+import { OfflineEvaluator } from "@meshsdk/core-csl";
 import {
   BlockfrostProvider,
   IWallet,
   MeshTxBuilder,
-  resolveScriptHash,
   stringToHex,
-  applyCborEncoding,
-  serializePlutusScript,
-  mTuple,
   CIP68_100,
   CIP68_222,
-  // deserializeAddress,
-  pubKeyAddress,
-  mConStr0,
+  deserializeAddress,
 } from "@meshsdk/core";
-import { getUtxoApiRoute, updateUtxoApiRoute } from "./api_common";
+import {
+  getUtxoApiRoute,
+  updateUtxoApiRoute,
+} from "../pages/common/api_common";
 import { ApiMiddleware } from "@/middleware/api";
-import { ContributerDatum, OracleCounterDatum } from "./types";
+import {
+  actionUpdate,
+  contributorDatum,
+  ContributorDatum,
+  GitHub,
+  IdRedeemrMint,
+  idRedeemrMint,
+  oracleCounterDatum,
+  OracleCounterDatum,
+} from "./types";
+import {
+  getIdMintingPolicyId,
+  getIdMintingScriptCbor,
+  getIdOracleCounterAddress,
+  getIdOracleCounterSpendingScriptCbor,
+  getIdSpendingScriptAddress,
+} from "./common";
 
-export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
+export const mintIdToken = async (
+  idName: string,
+  gitHub: string,
+  wallet: IWallet
+) => {
   if (!wallet) {
     alert("Please connect your wallet");
     return;
@@ -44,56 +60,17 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
   const changeAddress = await wallet.getChangeAddress();
   const utxos = await wallet.getUtxos();
   const collateral = (await wallet.getCollateral())[0];
-  // const usedAddress = (await wallet.getUsedAddresses())[0];
-  // const { pubKeyHash } = deserializeAddress(usedAddress);
+  const usedAddress = (await wallet.getUsedAddresses())[0];
+  const { pubKeyHash } = deserializeAddress(usedAddress);
 
-  const idOracleCounterSpendingScriptCbor = applyCborEncoding(
-    blueprint.validators[12]!.compiledCode
-  );
+  const idOracleCounterSpendingScriptCbor =
+    getIdOracleCounterSpendingScriptCbor();
+  const idMintingScriptCbor = getIdMintingScriptCbor();
 
-  const idOracleCounterAddress = serializePlutusScript(
-    {
-      code: idOracleCounterSpendingScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
+  const idMintingPolicyId = getIdMintingPolicyId();
 
-  const idSpendingScriptCbor = applyParamsToScript(
-    blueprint.validators[7]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
-
-  const idMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[5]!.compiledCode,
-    [
-      stringToHex(`${process.env.NEXT_PUBLIC_COLLECTION_NAME!}`),
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-      process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_POLICY_ID!,
-    ],
-    "Mesh"
-  );
-
-  const idSpendingScriptAddress = serializePlutusScript(
-    {
-      code: idSpendingScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
-
-  const idMintingPolicyId = resolveScriptHash(idMintingScriptCbor, "V3");
+  const idOracleCounterAddress = getIdOracleCounterAddress();
+  const idSpendingScriptAddress = getIdSpendingScriptAddress();
 
   const api = new ApiMiddleware(wallet);
   try {
@@ -110,25 +87,19 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
       counterResult.oracleOutputIndex
     );
 
-    const updatedOracleDatum: OracleCounterDatum = {
-      constructor: 0,
-      fields: [
-        {
-          int: count + 1,
-        },
-        pubKeyAddress(process.env.NEXT_PUBLIC_PUB_KEY_HASH!),
-      ],
-    };
+    const updatedOracleDatum: OracleCounterDatum = oracleCounterDatum(
+      count + 1,
+      process.env.NEXT_PUBLIC_PUB_KEY_HASH!
+    );
 
-    const contributerDatum: ContributerDatum = {
-      constructor: 0,
-      fields: [
-        {
-          bytes: stringToHex(gitHub),
-        },
-        { list: [] },
-      ],
-    };
+    const idOutputDatum: ContributorDatum = contributorDatum(
+      new Map([[GitHub, gitHub]]),
+      1,
+      new Map(),
+      pubKeyHash
+    );
+
+    const idReemder: IdRedeemrMint = idRedeemrMint(idName);
 
     const unsignedTx = await txBuilder
       .readOnlyTxInReference(
@@ -137,33 +108,25 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
       )
       .spendingPlutusScriptV3()
       .txIn(counterResult.oracleTxHash, counterResult.oracleOutputIndex)
-      .txInRedeemerValue(mConStr0([]))
+      .txInRedeemerValue(actionUpdate, "JSON")
       .txInScript(idOracleCounterSpendingScriptCbor)
       .txInInlineDatumPresent()
       .mintPlutusScriptV3()
       .mint(
         "1",
         idMintingPolicyId,
-        CIP68_100(
-          stringToHex(
-            process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString()
-          )
-        )
+        CIP68_100(stringToHex(idName + count.toString()))
       )
       .mintingScript(idMintingScriptCbor)
-      .mintRedeemerValue(mConStr0([]))
+      .mintRedeemerValue(idReemder, "JSON")
       .mintPlutusScriptV3()
       .mint(
         "1",
         idMintingPolicyId,
-        CIP68_222(
-          stringToHex(
-            process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString()
-          )
-        )
+        CIP68_222(stringToHex(idName + count.toString()))
       )
       .mintingScript(idMintingScriptCbor)
-      .mintRedeemerValue(mConStr0([]))
+      .mintRedeemerValue(idReemder, "JSON")
       .txOut(idOracleCounterAddress, [
         {
           unit:
@@ -177,15 +140,12 @@ export const mintIdToken = async (gitHub: string, wallet: IWallet) => {
         {
           unit:
             idMintingPolicyId +
-            CIP68_100(
-              stringToHex(
-                process.env.NEXT_PUBLIC_COLLECTION_NAME! + count.toString()
-              )
-            ),
+            CIP68_100(stringToHex(idName + count.toString())),
           quantity: "1",
         },
       ])
-      .txOutInlineDatumValue(contributerDatum, "JSON")
+      .txOutInlineDatumValue(idOutputDatum, "JSON")
+      .requiredSignerHash(pubKeyHash)
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,

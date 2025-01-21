@@ -6,7 +6,7 @@ use cip.{cip68_100, cip68_222}
 use cocktail.{convert_int_to_bytes, outputs_at_with}
 use cocktail/vodka_extra_signatories.{key_signed}
 use identity_token_type.{
-  Action, CheckBurn, CheckMint, ContributerDatum, to_contributer_datum,
+  CheckBurn, CheckMint, ContributerDatum, IdRedeemr, to_contributer_datum,
 }
 use mocktail.{
   add_output, complete, mint, mock_policy_id, mock_pub_key_address,
@@ -17,11 +17,10 @@ use oracle_token_type.{OracleCounterDatum, OracleDatum}
 use oracle_token_util.{get_oracle_counter_datum, get_oracle_nft_datum}
 
 validator identity_token(
-  collection_name: ByteArray,
   oracle_nft: (PolicyId, AssetName),
   oracle_counter: PolicyId,
 ) {
-  mint(redeemer: Action, policy_id: PolicyId, transaction: Transaction) {
+  mint(redeemer: IdRedeemr, policy_id: PolicyId, transaction: Transaction) {
     let Transaction {
       mint,
       outputs,
@@ -40,20 +39,20 @@ validator identity_token(
     let counter_bytes = convert_int_to_bytes(oracle_counter_datum.count)
 
     let ref_token_name =
-      cip.cip68_100(collection_name)
+      cip.cip68_100(redeemer.token_name)
         |> concat(counter_bytes)
     let ref_token_qty =
       mint
         |> quantity_of(policy_id, ref_token_name)
 
     let nft_token_name =
-      cip.cip68_222(collection_name)
+      cip.cip68_222(redeemer.token_name)
         |> concat(counter_bytes)
     let nft_token_qty =
       mint
         |> quantity_of(policy_id, nft_token_name)
 
-    when redeemer is {
+    when redeemer.action is {
       CheckMint -> {
         let are_tokens_nfts = ref_token_qty == 1 && nft_token_qty == 1
         expect [ref_output] =
@@ -100,10 +99,7 @@ const mock_oracle_datum: OracleDatum =
     owner: mock_pub_key_address(0, None),
   }
 
-fn mock_mint_tx(
-  test_case: MintTestCase,
-  collection_name: ByteArray,
-) -> Transaction {
+fn mock_mint_tx(test_case: MintTestCase) -> Transaction {
   let MintTestCase {
     is_counter_inputed,
     is_oracle_inputed,
@@ -118,14 +114,14 @@ fn mock_mint_tx(
         is_redeemer_check,
         1,
         mock_policy_id(1),
-        cip68_100(collection_name)
+        cip68_100("id")
           |> concat(convert_int_to_bytes(10)),
       )
     |> mint(
         is_redeemer_check,
         1,
         mock_policy_id(1),
-        cip68_222(collection_name)
+        cip68_222("id")
           |> concat(convert_int_to_bytes(10)),
       )
     |> ref_tx_in(
@@ -155,7 +151,7 @@ fn mock_mint_tx(
           from_script("ref_token_hold"),
           from_asset(
             mock_policy_id(1),
-            cip68_100(collection_name)
+            cip68_100("id")
               |> concat(convert_int_to_bytes(10)),
             1,
           ),
@@ -176,8 +172,7 @@ fn mock_mint_tx(
 }
 
 test success_mint_identity_token() {
-  let collection_name = "id"
-  let id_redeemer = CheckMint
+  let id_redeemer = IdRedeemr { action: CheckMint, token_name: "id" }
 
   let tx =
     mock_mint_tx(
@@ -189,11 +184,9 @@ test success_mint_identity_token() {
         is_datum_check: True,
         is_key_signed: True,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,
@@ -203,8 +196,7 @@ test success_mint_identity_token() {
 }
 
 test fail_mint_identity_token_with_no_counter() fail {
-  let collection_name = "id"
-  let id_redeemer = CheckMint
+  let id_redeemer = IdRedeemr { action: CheckMint, token_name: "id" }
 
   let tx =
     mock_mint_tx(
@@ -216,11 +208,9 @@ test fail_mint_identity_token_with_no_counter() fail {
         is_datum_check: True,
         is_key_signed: True,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,
@@ -230,8 +220,7 @@ test fail_mint_identity_token_with_no_counter() fail {
 }
 
 test fail_mint_identity_token_with_no_oracle() fail {
-  let collection_name = "id"
-  let id_redeemer = CheckMint
+  let id_redeemer = IdRedeemr { action: CheckMint, token_name: "id" }
 
   let tx =
     mock_mint_tx(
@@ -243,11 +232,9 @@ test fail_mint_identity_token_with_no_oracle() fail {
         is_datum_check: True,
         is_key_signed: True,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,
@@ -257,8 +244,7 @@ test fail_mint_identity_token_with_no_oracle() fail {
 }
 
 test fail_mint_identity_token_with_no_ref_output() fail {
-  let collection_name = "id"
-  let id_redeemer = CheckMint
+  let id_redeemer = IdRedeemr { action: CheckMint, token_name: "id" }
 
   let tx =
     mock_mint_tx(
@@ -270,11 +256,9 @@ test fail_mint_identity_token_with_no_ref_output() fail {
         is_datum_check: True,
         is_key_signed: True,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,
@@ -284,8 +268,7 @@ test fail_mint_identity_token_with_no_ref_output() fail {
 }
 
 test fail_mint_identity_token_with_no_redeeme() fail {
-  let collection_name = "id"
-  let id_redeemer = CheckMint
+  let id_redeemer = IdRedeemr { action: CheckMint, token_name: "id" }
 
   let tx =
     mock_mint_tx(
@@ -297,11 +280,9 @@ test fail_mint_identity_token_with_no_redeeme() fail {
         is_datum_check: True,
         is_key_signed: True,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,
@@ -311,8 +292,7 @@ test fail_mint_identity_token_with_no_redeeme() fail {
 }
 
 test fail_mint_identity_token_with_no_datumn() fail {
-  let collection_name = "id"
-  let id_redeemer = CheckMint
+  let id_redeemer = IdRedeemr { action: CheckMint, token_name: "id" }
 
   let tx =
     mock_mint_tx(
@@ -324,11 +304,9 @@ test fail_mint_identity_token_with_no_datumn() fail {
         is_datum_check: False,
         is_key_signed: True,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,
@@ -338,8 +316,7 @@ test fail_mint_identity_token_with_no_datumn() fail {
 }
 
 test fail_mint_identity_token_with_no_sign() fail {
-  let collection_name = "id"
-  let id_redeemer = CheckMint
+  let id_redeemer = IdRedeemr { action: CheckMint, token_name: "id" }
 
   let tx =
     mock_mint_tx(
@@ -351,11 +328,9 @@ test fail_mint_identity_token_with_no_sign() fail {
         is_datum_check: True,
         is_key_signed: False,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,
@@ -371,10 +346,7 @@ type BurnTestCase {
   is_token_inputed: Bool,
 }
 
-fn mock_burn_tx(
-  test_case: BurnTestCase,
-  collection_name: ByteArray,
-) -> Transaction {
+fn mock_burn_tx(test_case: BurnTestCase) -> Transaction {
   let BurnTestCase {
     is_counter_inputed,
     is_oracle_inputed,
@@ -387,14 +359,14 @@ fn mock_burn_tx(
         is_redeemer_check,
         -1,
         mock_policy_id(1),
-        cip68_100(collection_name)
+        cip68_100("id")
           |> concat(convert_int_to_bytes(10)),
       )
     |> mint(
         is_redeemer_check,
         -1,
         mock_policy_id(1),
-        cip68_222(collection_name)
+        cip68_222("id")
           |> concat(convert_int_to_bytes(10)),
       )
     |> tx_in(
@@ -444,8 +416,7 @@ fn mock_burn_tx(
 }
 
 test success_burn_identity_token() {
-  let collection_name = "id"
-  let id_redeemer = CheckBurn
+  let id_redeemer = IdRedeemr { action: CheckBurn, token_name: "id" }
 
   let tx =
     mock_burn_tx(
@@ -455,11 +426,9 @@ test success_burn_identity_token() {
         is_redeemer_check: True,
         is_token_inputed: True,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,
@@ -469,8 +438,7 @@ test success_burn_identity_token() {
 }
 
 test fail_burn_identity_token_with_no_redeemer() fail {
-  let collection_name = "id"
-  let id_redeemer = CheckBurn
+  let id_redeemer = IdRedeemr { action: CheckBurn, token_name: "id" }
 
   let tx =
     mock_burn_tx(
@@ -480,11 +448,9 @@ test fail_burn_identity_token_with_no_redeemer() fail {
         is_redeemer_check: False,
         is_token_inputed: True,
       },
-      collection_name: collection_name,
     )
 
   identity_token.mint(
-    collection_name,
     (mock_policy_id(2), "oracle"),
     mock_policy_id(3),
     id_redeemer,

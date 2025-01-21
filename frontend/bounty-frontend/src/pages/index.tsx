@@ -8,11 +8,11 @@ import {
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import BountyTable from "@/components/BountyTable";
-import { mintOracleNFT } from "./transactions/mint_oracle_nft";
-import { mintOracleCounter } from "./transactions/mint_oracle_counter";
-import { spendOracleNFT } from "./transactions/spend_oracle_nft";
 import Link from "next/link";
 import Footer from "@/components/Footer";
+import { mintOracleCounter } from "@/transactions/mint_oracle_counter";
+import { mintOracleNFT } from "@/transactions/mint_oracle_nft";
+import { spendOracleNFT } from "@/transactions/spend_oracle_nft";
 
 export default function Home() {
   const basenavigation = [

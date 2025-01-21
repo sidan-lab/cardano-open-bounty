@@ -7,12 +7,12 @@ import {
   resolveScriptHash,
   stringToHex,
   deserializeAddress,
-  applyCborEncoding,
-  serializePlutusScript,
   mOutputReference,
   Data,
 } from "@meshsdk/core";
-import { insertUtxoApiRoute } from "./api_common";
+import { insertUtxoApiRoute } from "../pages/common/api_common";
+import { actionMint, oracleNFTDatum, OracleNFTDatum } from "./types";
+import { getOracleNFTAddress } from "./common";
 
 export const mintOracleNFT = async (wallet: IWallet) => {
   if (!wallet) {
@@ -46,88 +46,22 @@ export const mintOracleNFT = async (wallet: IWallet) => {
     paramUtxo.input.outputIndex
   );
 
-  const OracleNFTSpendingScriptCbor = applyCborEncoding(
-    blueprint.validators[16]!.compiledCode
-  );
-
-  const OracleNFTAddress = serializePlutusScript(
-    {
-      code: OracleNFTSpendingScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
-
   const OracleNFTMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[14]!.compiledCode,
+    blueprint.validators[11]!.compiledCode,
     [param]
   );
 
   const OracleNFTPolicyId = resolveScriptHash(OracleNFTMintingScriptCbor, "V3");
 
-  const oracleDatum = JSON.stringify({
-    constructor: 0,
-    fields: [
-      {
-        bytes: "",
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 1,
-            fields: [
-              {
-                bytes: "",
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-      {
-        bytes: "",
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 1,
-            fields: [
-              {
-                bytes: "",
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 0,
-            fields: [
-              {
-                bytes: pubKeyHash,
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-    ],
-  });
+  const oracleNFTAddress = getOracleNFTAddress();
+
+  const oracleDatum: OracleNFTDatum = oracleNFTDatum(
+    pubKeyHash,
+    pubKeyHash,
+    pubKeyHash,
+    pubKeyHash,
+    pubKeyHash
+  );
 
   try {
     const unsignedTx = await txBuilder
@@ -144,14 +78,8 @@ export const mintOracleNFT = async (wallet: IWallet) => {
         stringToHex(`${process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME}`)
       )
       .mintingScript(OracleNFTMintingScriptCbor)
-      .mintRedeemerValue(
-        JSON.stringify({
-          constructor: 0,
-          fields: [],
-        }),
-        "JSON"
-      )
-      .txOut(OracleNFTAddress, [
+      .mintRedeemerValue(actionMint, "JSON")
+      .txOut(oracleNFTAddress, [
         {
           unit:
             OracleNFTPolicyId +

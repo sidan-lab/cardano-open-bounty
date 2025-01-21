@@ -12,7 +12,10 @@ import {
   mConStr0,
   ByteString,
 } from "@meshsdk/core";
-import { getUtxoApiRoute, insertMultiSigApiRoute } from "./api_common";
+import {
+  getUtxoApiRoute,
+  insertMultiSigApiRoute,
+} from "../pages/common/api_common";
 import { ApiMiddleware } from "@/middleware/api";
 import { BountyDatum } from "./types";
 

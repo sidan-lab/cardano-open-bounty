@@ -3,7 +3,7 @@ import {
   deserializeDatum,
   stringToHex,
 } from "@meshsdk/core";
-import { AddressUtxo, AssetTransaction } from "./type";
+import { AddressUtxo, AssetTransaction, BountyWithName } from "./type";
 import {
   Bounty,
   BountyDatum,
@@ -19,6 +19,7 @@ import {
   getBountyMintingPolicyId,
   getIdMintingPolicyId,
 } from "@/transactions/common";
+import { getAssetNameByPolicyId } from "./common";
 
 export class BlockfrostService {
   blockFrost: BlockfrostProvider;
@@ -109,20 +110,33 @@ export class BlockfrostService {
     }
   };
 
-  getAllBountyDatumn = async (address: string): Promise<Bounty[]> => {
+  getAllBountyDatumn = async (address: string): Promise<BountyWithName[]> => {
     const url = `/addresses/${address}/utxos
 `;
     try {
       const addressUtxos: AddressUtxo[] = await this.blockFrost.get(url);
 
-      const bounties: Bounty[] = [];
+      const bounties: BountyWithName[] = [];
 
       addressUtxos.forEach((uxto) => {
         if (uxto.inline_datum) {
-          const datum: BountyDatum = deserializeDatum(uxto.inline_datum);
+          const name = getAssetNameByPolicyId(
+            uxto.amount,
+            this.bountyMintingPolicyId
+          );
 
-          const bounty: Bounty = convertBountyDatum(datum);
-          bounties.push(bounty);
+          if (name) {
+            const datum: BountyDatum = deserializeDatum(uxto.inline_datum);
+
+            const bounty: Bounty = convertBountyDatum(datum);
+
+            const bountyWithName: BountyWithName = {
+              name: name,
+              issue_url: bounty.issue_url,
+              reward: bounty.reward,
+            };
+            bounties.push(bountyWithName);
+          }
         }
       });
 

@@ -6,6 +6,11 @@ pub type Action {
   CheckBurn
 }
 
+pub type IdRedeemr {
+  action: Action,
+  token_name: ByteArray,
+}
+
 pub type ContributerDatum {
   metadata: Pairs<Data, Data>,
   // GitHub: ByteArray

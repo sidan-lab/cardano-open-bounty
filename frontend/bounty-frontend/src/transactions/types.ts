@@ -10,15 +10,14 @@ import {
   policyId,
   ScriptAddress,
   scriptAddress,
-  hashByteString,
   pubKeyAddress,
-  Data,
   conStr1,
   AssocMap,
   assocMap,
-  byteString,
   integer,
   pubKeyHash,
+  stringToHex,
+  byteString,
 } from "@meshsdk/common";
 
 export type OracleNFTDatum = ConStr0<
@@ -27,10 +26,19 @@ export type OracleNFTDatum = ConStr0<
 
 export type OracleCounterDatum = ConStr0<[Integer, PubKeyAddress]>;
 
+export type IdRedeemrMint = ConStr0<[ActionMint, ByteString]>;
+
+export type IdRedeemrBurn = ConStr0<[ActionBurn, ByteString]>;
+
 export type BountyDatum = ConStr0<[ByteString, Integer]>;
 
 export type ContributorDatum = ConStr0<
-  [AssocMap<Data, Data>, Integer, AssocMap<ByteString, Integer>, PubKeyHash]
+  [
+    AssocMap<ByteString, ByteString>,
+    Integer,
+    AssocMap<ByteString, Integer>,
+    PubKeyHash
+  ]
 >;
 
 export type ActionMint = ConStr0<[]>;
@@ -39,7 +47,7 @@ export type ActionBurn = ConStr1<[]>;
 
 export type ActionUpdate = ConStr0<[]>;
 
-export type ActionStop = ConStr0<[]>;
+export type ActionStop = ConStr1<[]>;
 
 export type BountyBurn = ConStr1<[ByteString]>;
 
@@ -62,7 +70,7 @@ export type Bounty = {
 };
 
 export type Contributor = {
-  metadata: Map<Data, Data>;
+  metadata: Map<string, string>;
   version: number;
   contributions: Map<string, number>;
   pub_key_hash: string;
@@ -88,25 +96,39 @@ export const oracleCounterDatum = (
   owner: string
 ): OracleCounterDatum => conStr0([integer(count), pubKeyAddress(owner)]);
 
+export const idRedeemrMint = (tokenName: string): IdRedeemrMint =>
+  conStr0([actionMint, byteString(stringToHex(tokenName))]);
+
+export const idRedeemrBurn = (tokenName: string): IdRedeemrBurn =>
+  conStr0([actionBurn, byteString(stringToHex(tokenName))]);
+
 export const bountyDatum = (
   issueURL: string,
   bountyAmount: number
-): BountyDatum => conStr0([hashByteString(issueURL), integer(bountyAmount)]);
+): BountyDatum =>
+  conStr0([byteString(stringToHex(issueURL)), integer(bountyAmount)]);
 
 export const contributorDatum = (
-  metadata: Map<Data, Data>,
+  metadata: Map<string, string>,
   version: number,
   contributions: Map<string, number>,
   pub_key_hash: string
 ): ContributorDatum => {
-  const metaDataItems: [Data, Data][] = Array.from(metadata.entries());
-  const metadataPluts: AssocMap<Data, Data> = assocMap<Data, Data>(
-    metaDataItems
-  );
+  const metaDataItems: [ByteString, ByteString][] = Array.from(
+    metadata.entries()
+  ).map(([key, value]) => [
+    byteString(stringToHex(key)),
+    byteString(stringToHex(value)),
+  ]);
+
+  const metadataPluts: AssocMap<ByteString, ByteString> = assocMap<
+    ByteString,
+    ByteString
+  >(metaDataItems);
 
   const contributionsItems: [ByteString, Integer][] = Array.from(
     contributions.entries()
-  ).map(([key, value]) => [byteString(key), integer(value)]);
+  ).map(([key, value]) => [byteString(stringToHex(key)), integer(value)]);
 
   const contributionsPluts: AssocMap<ByteString, Integer> = assocMap<
     ByteString,
@@ -121,10 +143,20 @@ export const contributorDatum = (
   ]);
 };
 
+export const actionMint: ActionMint = conStr0([]);
+
+export const actionBurn: ActionBurn = conStr1([]);
+
+export const actionUpdate: ActionUpdate = conStr0([]);
+
+export const actionStop: ActionStop = conStr1([]);
+
+export const GitHub: string = "GitHub";
+
 export const bountyBurn = (contributor_pub_key_hash: string): BountyBurn =>
   conStr1([{ bytes: contributor_pub_key_hash }]);
 
-export function convertOracleNFTrDatum(datum: OracleNFTDatum): OracleNFT {
+export function convertOracleNFTDatum(datum: OracleNFTDatum): OracleNFT {
   const bounty_token_policy_id: string = datum.fields[0].bytes;
   const bounty_board_address: string =
     datum.fields[1].fields[0].fields[0].bytes;
@@ -163,9 +195,9 @@ export function convertBountyDatum(datum: BountyDatum): Bounty {
 }
 
 export function convertContributorDatum(datum: ContributorDatum): Contributor {
-  const metadata: Map<Data, Data> = new Map();
+  const metadata: Map<string, string> = new Map();
   datum.fields[0].map.forEach((item) => {
-    metadata.set(item.k, item.v);
+    metadata.set(item.k.bytes, item.v.bytes);
   });
 
   const contributions: Map<string, number> = new Map();

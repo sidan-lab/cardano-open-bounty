@@ -7,12 +7,12 @@ import {
   resolveScriptHash,
   stringToHex,
   deserializeAddress,
-  applyCborEncoding,
-  serializePlutusScript,
   mOutputReference,
   Data,
 } from "@meshsdk/core";
-import { insertUtxoApiRoute } from "./api_common";
+import { insertUtxoApiRoute } from "../pages/common/api_common";
+import { OracleCounterDatum, oracleCounterDatum } from "./types";
+import { getIdOracleCounterAddress } from "./common";
 
 export const mintOracleCounter = async (wallet: IWallet) => {
   if (!wallet) {
@@ -46,21 +46,8 @@ export const mintOracleCounter = async (wallet: IWallet) => {
     paramUtxo.input.outputIndex
   );
 
-  const idOracleCounterSpendingScriptCbor = applyCborEncoding(
-    blueprint.validators[12]!.compiledCode
-  );
-
-  const idOracleCounterAddress = serializePlutusScript(
-    {
-      code: idOracleCounterSpendingScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
-
   const idOracleCounterMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[14]!.compiledCode,
+    blueprint.validators[11]!.compiledCode,
     [param]
   );
 
@@ -69,31 +56,8 @@ export const mintOracleCounter = async (wallet: IWallet) => {
     "V3"
   );
 
-  const oracleDatum = JSON.stringify({
-    constructor: 0,
-    fields: [
-      {
-        int: 0,
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 0,
-            fields: [
-              {
-                bytes: pubKeyHash,
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-    ],
-  });
+  const idOracleCounterAddress = getIdOracleCounterAddress();
+  const oracleDatum: OracleCounterDatum = oracleCounterDatum(0, pubKeyHash);
 
   try {
     const unsignedTx = await txBuilder
