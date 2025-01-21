@@ -2,7 +2,6 @@ import {
   ConStr0,
   Integer,
   PubKeyAddress,
-  List,
   PubKeyHash,
   ByteString,
   ConStr1,
@@ -13,10 +12,13 @@ import {
   scriptAddress,
   hashByteString,
   pubKeyAddress,
-  MTuple,
   Data,
-  mTuple,
   conStr1,
+  AssocMap,
+  assocMap,
+  byteString,
+  integer,
+  pubKeyHash,
 } from "@meshsdk/common";
 
 export type OracleNFTDatum = ConStr0<
@@ -27,13 +29,8 @@ export type OracleCounterDatum = ConStr0<[Integer, PubKeyAddress]>;
 
 export type BountyDatum = ConStr0<[ByteString, Integer]>;
 
-export type ContributerDatum = ConStr0<
-  [
-    List<MTuple<Data, Data>>,
-    Integer,
-    List<MTuple<ByteString, Integer>>,
-    PubKeyHash
-  ]
+export type ContributorDatum = ConStr0<
+  [AssocMap<Data, Data>, Integer, AssocMap<ByteString, Integer>, PubKeyHash]
 >;
 
 export type ActionMint = ConStr0<[]>;
@@ -64,10 +61,10 @@ export type Bounty = {
   reward: number;
 };
 
-export type Contributer = {
-  metadata: [Data, Data][];
+export type Contributor = {
+  metadata: Map<Data, Data>;
   version: number;
-  contributions: [string, number][];
+  contributions: Map<string, number>;
   pub_key_hash: string;
 };
 
@@ -89,38 +86,38 @@ export const oracleNFTDatum = (
 export const oracleCounterDatum = (
   count: number,
   owner: string
-): OracleCounterDatum => conStr0([{ int: count }, pubKeyAddress(owner)]);
+): OracleCounterDatum => conStr0([integer(count), pubKeyAddress(owner)]);
 
 export const bountyDatum = (
   issueURL: string,
   bountyAmount: number
-): BountyDatum => conStr0([hashByteString(issueURL), { int: bountyAmount }]);
+): BountyDatum => conStr0([hashByteString(issueURL), integer(bountyAmount)]);
 
-export const constructContributerDatum = (
-  metadata: [Data, Data][],
+export const contributorDatum = (
+  metadata: Map<Data, Data>,
   version: number,
-  contributions: [string, number][],
+  contributions: Map<string, number>,
   pub_key_hash: string
-): ContributerDatum => {
-  const metadataPluts: MTuple<Data, Data>[] = [];
-  metadata.forEach((item) => {
-    const pair: MTuple<Data, Data> = mTuple(item[0], item[1]);
-    metadataPluts.push(pair);
-  });
+): ContributorDatum => {
+  const metaDataItems: [Data, Data][] = Array.from(metadata.entries());
+  const metadataPluts: AssocMap<Data, Data> = assocMap<Data, Data>(
+    metaDataItems
+  );
 
-  const contributionsPluts: MTuple<ByteString, Integer>[] = [];
-  contributions.forEach((item) => {
-    const pair: MTuple<ByteString, Integer> = mTuple(hashByteString(item[0]), {
-      int: item[1],
-    });
-    contributionsPluts.push(pair);
-  });
+  const contributionsItems: [ByteString, Integer][] = Array.from(
+    contributions.entries()
+  ).map(([key, value]) => [byteString(key), integer(value)]);
+
+  const contributionsPluts: AssocMap<ByteString, Integer> = assocMap<
+    ByteString,
+    Integer
+  >(contributionsItems);
 
   return conStr0([
-    { list: metadataPluts },
-    { int: version },
-    { list: contributionsPluts },
-    { bytes: pub_key_hash },
+    metadataPluts,
+    integer(version),
+    contributionsPluts,
+    pubKeyHash(pub_key_hash),
   ]);
 };
 
@@ -165,18 +162,18 @@ export function convertBountyDatum(datum: BountyDatum): Bounty {
   };
 }
 
-export function convertContributerDatum(datum: ContributerDatum): Contributer {
-  const metadata: [Data, Data][] = [];
-  datum.fields[0].list.forEach((item) => {
-    const pair: [Data, Data] = [item[0], item[1]];
-    metadata.push(pair);
+export function convertContributorDatum(datum: ContributorDatum): Contributor {
+  const metadata: Map<Data, Data> = new Map();
+  datum.fields[0].map.forEach((item) => {
+    metadata.set(item.k, item.v);
   });
+
+  const contributions: Map<string, number> = new Map();
+  datum.fields[2].map.forEach((item) => {
+    contributions.set(item.k.bytes, Number(item.v.int));
+  });
+
   const version: number = Number(datum.fields[1].int);
-  const contributions: [string, number][] = [];
-  datum.fields[2].list.forEach((item) => {
-    const pair: [Data, Data] = [item[0].bytes, Number(item[1].int)];
-    metadata.push(pair);
-  });
   const pub_key_hash: string = datum.fields[3].bytes;
   return {
     metadata: metadata,

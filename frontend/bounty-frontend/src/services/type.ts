@@ -5,18 +5,6 @@ export type AssetTransaction = {
   block_time: number;
 };
 
-export type Contribution = {
-  all_signatories: string[];
-  reward: number;
-};
-
-export type Bounty = {
-  name: string;
-  issue_url: string;
-  reward: number;
-  all_signatories: string[];
-};
-
 export type AddressUtxo = {
   address: string;
   tx_hash: string;
