@@ -2,6 +2,8 @@ import { CIP68_100, hexToString, IWallet } from "@meshsdk/core";
 import { UserWalletService } from "@/services/walletServices";
 import { BlockfrostService } from "@/services/blockfrostServices";
 import { Contributor, GitHub } from "@/transactions/types";
+import { BountyWithName } from "@/services/type";
+import { getBountyBoardScriptAddress } from "@/transactions/common";
 
 export class ApiMiddleware {
   wallet: UserWalletService;
@@ -118,6 +120,38 @@ export class ApiMiddleware {
       );
 
       return { count };
+    } catch (error) {
+      console.error("Error fetching count:", error);
+      throw error;
+    }
+  };
+
+  getAllBounty = async (): Promise<BountyWithName[]> => {
+    try {
+      const bountyBoardScriptAddress = getBountyBoardScriptAddress();
+      const bounties: BountyWithName[] =
+        await this.blockFrost.getAllBountyDatumn(bountyBoardScriptAddress);
+
+      return bounties;
+    } catch (error) {
+      console.error("Error fetching count:", error);
+      throw error;
+    }
+  };
+
+  getOwnBounty = async (): Promise<BountyWithName[]> => {
+    try {
+      const { policyId, assetName } = await this.wallet.getIdToken();
+      const asset = policyId + assetName.slice(8);
+
+      const bountyBoardScriptAddress = getBountyBoardScriptAddress();
+      const bounties: BountyWithName[] =
+        await this.blockFrost.getOwnBountyDatumn(
+          bountyBoardScriptAddress,
+          asset
+        );
+
+      return bounties;
     } catch (error) {
       console.error("Error fetching count:", error);
       throw error;

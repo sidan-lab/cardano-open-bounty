@@ -146,6 +146,46 @@ export class BlockfrostService {
     }
   };
 
+  getOwnBountyDatumn = async (
+    address: string,
+    asset: string
+  ): Promise<BountyWithName[]> => {
+    const url = `/addresses/${address}/utxos/${asset}
+`;
+    try {
+      const addressUtxos: AddressUtxo[] = await this.blockFrost.get(url);
+
+      const bounties: BountyWithName[] = [];
+
+      addressUtxos.forEach((uxto) => {
+        if (uxto.inline_datum) {
+          const name = getAssetNameByPolicyId(
+            uxto.amount,
+            this.bountyMintingPolicyId
+          );
+
+          if (name) {
+            const datum: BountyDatum = deserializeDatum(uxto.inline_datum);
+
+            const bounty: Bounty = convertBountyDatum(datum);
+
+            const bountyWithName: BountyWithName = {
+              name: name,
+              issue_url: bounty.issue_url,
+              reward: bounty.reward,
+            };
+            bounties.push(bountyWithName);
+          }
+        }
+      });
+
+      return bounties;
+    } catch (error) {
+      console.error("Error geting own bounty:", error);
+      throw error;
+    }
+  };
+
   constructor() {
     this.blockFrost = new BlockfrostProvider(
       process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY!
