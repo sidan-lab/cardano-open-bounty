@@ -47,10 +47,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const getWalletBalance = async () => {
       const api = new ApiMiddleware(wallet);
-      const { tokenName, gitHub, contributions } = await api.getIdInfo(
-        null,
-        null
-      );
+      const { tokenName, gitHub, contributions } = await api.getIdInfo();
 
       const balance = await wallet.getLovelace();
       setUserBalance(balance);

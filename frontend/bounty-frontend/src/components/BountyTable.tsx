@@ -16,7 +16,7 @@ interface Bounty {
 const BountyTable: React.FC = () => {
   const { wallet, connected } = useWallet();
   const [showOwnBountyBoard, setShowOwnBountyBoard] = useState<boolean>(false);
-  
+
   const [bounties, setBounties] = useState<Bounty[]>([
     {
       name: "Project-A: Fix Bugs",
@@ -128,12 +128,12 @@ const BountyTable: React.FC = () => {
       required_signatories: ["signatory1"],
     },
   ]);
-  
+
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [hasIDToken, setHasIDToken] = useState(false);
-  
+
   useEffect(() => {
     const checkIDTokenOwnership = async () => {
       const api = new ApiMiddleware(wallet);
@@ -143,8 +143,8 @@ const BountyTable: React.FC = () => {
     if (connected) {
       checkIDTokenOwnership();
     }
-  }, [ connected, wallet]);
-  
+  }, [connected, wallet]);
+
   const toggleBountyBoard = () => {
     setShowOwnBountyBoard((prev) => !prev);
   };

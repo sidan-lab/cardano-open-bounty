@@ -73,16 +73,14 @@ export class ApiMiddleware {
     }
   };
 
-  getIdInfo = async (
-    tx_hash: string | null,
-    outputIndex: number | null
-  ): Promise<{
+  getIdInfo = async (): Promise<{
     tokenName: string;
     gitHub: string;
     contributions: Map<string, number>;
+    tx_hash: string;
+    outputIndex: number;
   }> => {
     try {
-      // if (!tx_hash) {
       const { policyId, assetName } = await this.wallet.getIdToken();
 
       const refAssetName = CIP68_100(assetName.slice(8));
@@ -96,23 +94,13 @@ export class ApiMiddleware {
         index
       );
 
+      const tx_hash: string = txHash;
+      const outputIndex: number = index;
       const tokenName: string = hexToString(assetName.slice(8));
       const gitHub: string = contributor.metadata.get(GitHub)!;
 
       const contributions: Map<string, number> = contributor.contributions;
-      return { tokenName, gitHub, contributions };
-      // }
-      // else {
-      //   const contributor: Contributor = await this.blockFrost.getIdTokenDatum(
-      //     tx_hash,
-      //     outputIndex!
-      //   );
-
-      //   const gitHub: string = contributor.metadata.get(GitHub)!;
-
-      //   const contributions: Map<string, number> = contributor.contributions;
-      //   return { gitHub, contributions };
-      // }
+      return { tx_hash, outputIndex, tokenName, gitHub, contributions };
     } catch (error) {
       console.error("Error getting id info :", error);
       throw error;

@@ -78,6 +78,7 @@ export class BlockfrostService {
       const txHash = assetTransactions[0].tx_hash;
 
       const index = 1;
+      console.log(assetTransactions);
 
       return { txHash, index };
     } catch (error) {

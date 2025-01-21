@@ -1,29 +1,27 @@
-import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../aiken-workspace/plutus.json";
+import { OfflineEvaluator } from "@meshsdk/core-csl";
 import {
   BlockfrostProvider,
+  CIP68_222,
   IWallet,
   MeshTxBuilder,
-  resolveScriptHash,
   stringToHex,
-  serializePlutusScript,
-  mTuple,
+
   // deserializeAddress,
-  mConStr0,
-  ByteString,
 } from "@meshsdk/core";
-import {
-  getUtxoApiRoute,
-  insertMultiSigApiRoute,
-} from "../pages/common/api_common";
+import { getUtxoApiRoute } from "../pages/common/api_common";
 import { ApiMiddleware } from "@/middleware/api";
-import { BountyDatum } from "./types";
+import { actionMint, bountyDatum, BountyDatum } from "./types";
+import {
+  getBountyBoardScriptAddress,
+  getBountyMintingPolicyId,
+  getBountyMintingScriptCbor,
+  getIdMintingPolicyId,
+  getIdSpendingScriptCbor,
+} from "./common";
 
 export const mintBountyToken = async (
-  bounty_name: string,
   issue_url: string,
   reward: number,
-  all_signatories: string[],
   wallet: IWallet
 ) => {
   if (!wallet) {
@@ -53,82 +51,56 @@ export const mintBountyToken = async (
   // const usedAddress = (await wallet.getUsedAddresses())[0];
   // const { pubKeyHash } = deserializeAddress(usedAddress);
 
-  const bountyBoardScriptCbor = applyParamsToScript(
-    blueprint.validators[1]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
+  const idSpendingScriptCbor = getIdSpendingScriptCbor();
+  const bountyMintingScriptCbor = getBountyMintingScriptCbor();
 
-  const bountyMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[3]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
+  const bountyBoardScriptAddress = getBountyBoardScriptAddress();
 
-  const bountyBoardScriptAddress = serializePlutusScript(
-    {
-      code: bountyBoardScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
+  const idMintingPolicyId = getIdMintingPolicyId();
+  const bountyMintingPolicyId = getBountyMintingPolicyId();
 
-  const bountyMintingPolicyId = resolveScriptHash(
-    bountyMintingScriptCbor,
-    "V3"
-  );
   const api = new ApiMiddleware(wallet);
   try {
-    const idNftTxResult = await api.getIdNftTx();
+    const { tokenName, tx_hash, outputIndex } = await api.getIdInfo();
     const oracleResult = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
     );
 
-    const converted_all_signatories: ByteString[] = all_signatories.map(
-      (item) => ({ bytes: item })
-    );
-
-    const bountyDatum: BountyDatum = {
-      constructor: 0,
-      fields: [
-        {
-          bytes: stringToHex(issue_url),
-        },
-        { int: reward },
-        {
-          list: converted_all_signatories,
-        },
-      ],
-    };
+    const bountyOutputDatum: BountyDatum = bountyDatum(issue_url, reward);
 
     const unsignedTx = await txBuilder
       .readOnlyTxInReference(
         oracleResult.oracleTxHash,
         oracleResult.oracleOutputIndex
       )
-      .txIn(idNftTxResult.txHash, idNftTxResult.index)
+      .spendingPlutusScriptV3()
+      .txIn(tx_hash, outputIndex)
+      .txInRedeemerValue("", "Mesh")
+      .txInScript(idSpendingScriptCbor)
+      .txInInlineDatumPresent()
       .mintPlutusScriptV3()
-      .mint("1", bountyMintingPolicyId, stringToHex(bounty_name))
+      .mint("1", bountyMintingPolicyId, stringToHex(tokenName))
       .mintingScript(bountyMintingScriptCbor)
-      .mintRedeemerValue(mConStr0([]))
+      .mintRedeemerValue(actionMint, "JSON")
       .txOut(bountyBoardScriptAddress, [
         {
-          unit: bountyMintingPolicyId + stringToHex(bounty_name),
+          unit: bountyMintingPolicyId + stringToHex(tokenName),
           quantity: "1",
         },
       ])
-      .txOutInlineDatumValue(bountyDatum, "JSON")
+      .txOutInlineDatumValue(bountyOutputDatum, "JSON")
+      .txOut(changeAddress, [
+        {
+          unit: idMintingPolicyId + CIP68_222(stringToHex(tokenName)),
+          quantity: "1",
+        },
+      ])
+      .txOut(bountyBoardScriptAddress, [
+        {
+          unit: "lovelace",
+          quantity: (reward * 1000000).toString(),
+        },
+      ])
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,
@@ -142,7 +114,7 @@ export const mintBountyToken = async (
     const signedTx = await wallet.signTx(unsignedTx, true);
     const txHash = await wallet.submitTx(signedTx);
 
-    await insertMultiSigApiRoute(bounty_name, all_signatories, txHash, "0");
+    // await insertMultiSigApiRoute(bounty_name, all_signatories, txHash, "0");
 
     console.log(txHash);
   } catch (e) {
