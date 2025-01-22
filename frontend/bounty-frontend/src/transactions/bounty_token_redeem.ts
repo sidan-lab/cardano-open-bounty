@@ -6,7 +6,10 @@ import {
   stringToHex,
   CIP68_100,
 } from "@meshsdk/core";
-import { getUtxoApiRoute } from "../pages/common/api_common";
+import {
+  getUtxoApiRoute,
+  insertUnsignedBountyApiRoute,
+} from "../pages/common/api_common";
 import { ApiMiddleware } from "@/middleware/api";
 import {
   getBountyBoardScriptCbor,
@@ -129,14 +132,16 @@ export const burnBountyToken = async (
 
     const signedTx = await wallet.signTx(unsignedTx, true);
 
-    // await insertRedeemMultiSigApiRoute(
-    //   bounty_name,
-    //   signedTx,
-    //   all_signatories,
-    //   idInfoResult.gitHub
-    // );
+    await insertUnsignedBountyApiRoute(
+      bounty.name,
+      idInfoResult.gitHub,
+      idInfoResult.contributions,
+      signedTx,
+      bounty.txHash,
+      bounty.outputIndex
+    );
 
-    console.log(txHash);
+    console.log(signedTx);
   } catch (e) {
     console.error(e);
   }
