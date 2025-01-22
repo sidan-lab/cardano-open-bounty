@@ -1,4 +1,5 @@
 import {
+  Asset,
   BlockfrostProvider,
   deserializeDatum,
   hexToString,
@@ -8,9 +9,7 @@ import {
   Bounty,
   BountyDatum,
   Contributor,
-  ContributorDatum,
   convertBountyDatum,
-  convertContributorDatum,
   convertOracleCounterDatum,
   OracleCounter,
   OracleCounterDatum,
@@ -19,7 +18,11 @@ import {
   getBountyMintingPolicyId,
   getIdMintingPolicyId,
 } from "@/transactions/common";
-import { getAssetNameByPolicyId } from "./common";
+import {
+  getAssetNameByPolicyId,
+  getOutputIndexAndDatumByAsset,
+  getOutputIndexByAsset,
+} from "./common";
 
 export class BlockfrostService {
   blockFrost: BlockfrostProvider;
@@ -57,10 +60,19 @@ export class BlockfrostService {
         url
       );
 
-      const txHash = assetTransactions[0].tx_hash;
+      const txHash = assetTransactions[assetTransactions.length - 1].tx_hash;
 
-      const index = 2;
+      const utxo = await this.blockFrost.fetchUTxOs(txHash);
+      const asset: Asset = {
+        unit: policyId + assetName,
+        quantity: "1",
+      };
 
+      const index = getOutputIndexByAsset(utxo, asset);
+
+      if (!index) {
+        throw new Error("Error getIdTokenTxHash cannot find outputIndex");
+      }
       return { txHash, index };
     } catch (error) {
       console.error("Error geting idToken txHash:", error);
@@ -68,10 +80,14 @@ export class BlockfrostService {
     }
   };
 
-  getIdRefTxHash = async (
+  getIdRefTxAndDatum = async (
     policyId: string,
     assetName: string
-  ): Promise<{ txHash: string; index: number }> => {
+  ): Promise<{
+    txHash: string;
+    index: number;
+    contributor: Contributor;
+  }> => {
     const asset = policyId + assetName;
     const url = `/assets/${asset}/transactions`;
     try {
@@ -79,36 +95,26 @@ export class BlockfrostService {
         url
       );
 
-      const txHash = assetTransactions[0].tx_hash;
+      const txHash = assetTransactions[assetTransactions.length - 1].tx_hash;
 
-      const index = 1;
-      console.log(assetTransactions);
+      const utxo = await this.blockFrost.fetchUTxOs(txHash);
+      const asset: Asset = {
+        unit: policyId + assetName,
+        quantity: "1",
+      };
 
-      return { txHash, index };
+      const { outputIndex, contributor } = getOutputIndexAndDatumByAsset(
+        utxo,
+        asset
+      );
+
+      if (!outputIndex || !contributor) {
+        throw new Error("Error getIdTokenTxHash cannot find outputIndex");
+      }
+
+      return { txHash, index: outputIndex, contributor };
     } catch (error) {
       console.error("Error geting idToken txHash:", error);
-      throw error;
-    }
-  };
-
-  getIdTokenDatum = async (
-    txHash: string,
-    index: number
-  ): Promise<Contributor> => {
-    try {
-      const utxo = await this.blockFrost.fetchUTxOs(txHash, index);
-
-      const plutusData = utxo[0].output.plutusData!;
-
-      const datum: ContributorDatum = deserializeDatum(plutusData);
-
-      const contributor: Contributor = convertContributorDatum(datum);
-
-      console.log(contributor);
-
-      return contributor;
-    } catch (error) {
-      console.error("Error fetching count:", error);
       throw error;
     }
   };
@@ -150,6 +156,7 @@ export class BlockfrostService {
     }
   };
 
+  //todo: fix api error
   getOwnBountyDatumn = async (
     address: string,
     asset: string

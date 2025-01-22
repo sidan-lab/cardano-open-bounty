@@ -11,6 +11,7 @@ import {
   mConStr1,
   deserializeAddress,
   ByteString,
+  CIP68_100,
 } from "@meshsdk/core";
 import {
   getMultiSigTxApiRoute,
@@ -18,12 +19,17 @@ import {
   insertRedeemMultiSigApiRoute,
 } from "../pages/common/api_common";
 import { ApiMiddleware } from "@/middleware/api";
-import { ContributerDatum, ContributionDatum } from "./types";
-import { Contribution } from "@/services/type";
+import {
+  getBountyBoardScriptCbor,
+  getBountyMintingPolicyId,
+  getBountyMintingScriptCbor,
+  getIdMintingPolicyId,
+  getIdSpendingScriptAddress,
+  getIdSpendingScriptCbor,
+} from "./common";
 
 export const burnBountyToken = async (
   bounty_name: string,
-  all_signatories: string[],
   reward: number,
   wallet: IWallet
 ) => {
@@ -53,83 +59,25 @@ export const burnBountyToken = async (
   const collateral = (await wallet.getCollateral())[0];
   // const usedAddress = (await wallet.getUsedAddresses())[0];
   // const { pubKeyHash } = deserializeAddress(usedAddress);
-  const idMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[5]!.compiledCode,
-    [
-      stringToHex(`${process.env.NEXT_PUBLIC_COLLECTION_NAME!}`),
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-      process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_POLICY_ID!,
-    ],
-    "Mesh"
-  );
-  const idMintingPolicyId = resolveScriptHash(idMintingScriptCbor, "V3");
 
-  const idSpendingScriptCbor = applyParamsToScript(
-    blueprint.validators[7]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
+  const idMintingPolicyId = getIdMintingPolicyId();
+  const idSpendingScriptCbor = getIdSpendingScriptCbor();
+  const idSpendingScriptAddress = getIdSpendingScriptAddress();
 
-  const idSpendingScriptAddress = serializePlutusScript(
-    {
-      code: idSpendingScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
+  const bountyBoardScriptCbor = getBountyBoardScriptCbor();
+  const bountyMintingScriptCbor = getBountyMintingScriptCbor();
+  const bountyMintingPolicyId = getBountyMintingPolicyId();
 
-  const bountyBoardScriptCbor = applyParamsToScript(
-    blueprint.validators[1]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
-
-  const bountyMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[3]!.compiledCode,
-    [
-      mTuple(
-        process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-        process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-      ),
-    ],
-    "Mesh"
-  );
-
-  const bountyMintingPolicyId = resolveScriptHash(
-    bountyMintingScriptCbor,
-    "V3"
-  );
   const api = new ApiMiddleware(wallet);
   try {
     const idNftTxResult = await api.getIdNftTx();
-    const idRefTokenResult = await api.getIdRefToken();
     const idRefTxResult = await api.getIdRefTx();
-    const idInfoResult = await api.getIdInfo(
-      idRefTxResult.txHash,
-      idRefTxResult.index
-    );
+    const idInfoResult = await api.getIdInfo();
+    const ownerIdInfoResult = await api.getOwnerIdInfo(bounty_name);
     const oracleResult = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
     );
     const bountyResult = await getMultiSigTxApiRoute(bounty_name);
-
-    const pubKeyHashes: string[] = all_signatories.map(
-      (item) => deserializeAddress(item).pubKeyHash
-    );
 
     const contributions: Contribution[] = idInfoResult.contributions;
     contributions.push({ all_signatories: pubKeyHashes, reward: reward });
@@ -169,6 +117,10 @@ export const burnBountyToken = async (
         oracleResult.oracleTxHash,
         oracleResult.oracleOutputIndex
       )
+      .readOnlyTxInReference(
+        ownerIdInfoResult.tx_hash,
+        ownerIdInfoResult.outputIndex
+      )
       .txIn(idNftTxResult.txHash, idNftTxResult.index)
       .txIn(idRefTxResult.txHash, idRefTxResult.index)
       .txInScript(idSpendingScriptCbor)
@@ -183,7 +135,8 @@ export const burnBountyToken = async (
       .mintRedeemerValue(mConStr1([]))
       .txOut(idSpendingScriptAddress, [
         {
-          unit: idMintingPolicyId + stringToHex(idRefTokenResult.refAssetName),
+          unit:
+            idMintingPolicyId + CIP68_100(stringToHex(idNftTxResult.tokenName)),
           quantity: "1",
         },
       ])
@@ -194,12 +147,12 @@ export const burnBountyToken = async (
         collateral.output.amount,
         collateral.output.address
       )
+      .requiredSignerHash(ownerIdInfoResult.pubKeyHash)
       .changeAddress(changeAddress)
       .selectUtxosFrom(utxos.slice(1))
       .complete();
 
     const signedTx = await wallet.signTx(unsignedTx, true);
-    const txHash = await wallet.submitTx(signedTx);
 
     await insertRedeemMultiSigApiRoute(
       bounty_name,

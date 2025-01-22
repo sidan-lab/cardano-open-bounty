@@ -1,9 +1,12 @@
-import { CIP68_100, hexToString, IWallet } from "@meshsdk/core";
+import { CIP68_100, hexToString, IWallet, stringToHex } from "@meshsdk/core";
 import { UserWalletService } from "@/services/walletServices";
 import { BlockfrostService } from "@/services/blockfrostServices";
-import { Contributor, GitHub } from "@/transactions/types";
+import { GitHub } from "@/transactions/types";
 import { BountyWithName } from "@/services/type";
-import { getBountyBoardScriptAddress } from "@/transactions/common";
+import {
+  getBountyBoardScriptAddress,
+  getIdMintingPolicyId,
+} from "@/transactions/common";
 
 export class ApiMiddleware {
   wallet: UserWalletService;
@@ -82,7 +85,7 @@ export class ApiMiddleware {
       const { policyId, assetName } = await this.wallet.getIdToken();
 
       const refAssetName = CIP68_100(assetName.slice(3));
-      const { txHash, index } = await this.blockFrost.getIdRefTxHash(
+      const { txHash, index } = await this.blockFrost.getIdRefTxAndDatum(
         policyId,
         refAssetName
       );
@@ -106,14 +109,8 @@ export class ApiMiddleware {
 
       const refAssetName = CIP68_100(assetName.slice(8));
 
-      const { txHash, index } = await this.blockFrost.getIdRefTxHash(
-        policyId,
-        refAssetName
-      );
-      const contributor: Contributor = await this.blockFrost.getIdTokenDatum(
-        txHash,
-        index
-      );
+      const { txHash, index, contributor } =
+        await this.blockFrost.getIdRefTxAndDatum(policyId, refAssetName);
 
       const tx_hash: string = txHash;
       const outputIndex: number = index;
@@ -124,6 +121,32 @@ export class ApiMiddleware {
       return { tx_hash, outputIndex, tokenName, gitHub, contributions };
     } catch (error) {
       console.error("Error getting id info :", error);
+      throw error;
+    }
+  };
+
+  getOwnerIdInfo = async (
+    tokenName: string
+  ): Promise<{
+    pubKeyHash: string;
+    tx_hash: string;
+    outputIndex: number;
+  }> => {
+    try {
+      const policyId = getIdMintingPolicyId();
+      const assetName = CIP68_100(stringToHex(tokenName));
+
+      const { txHash, index, contributor } =
+        await this.blockFrost.getIdRefTxAndDatum(policyId, assetName);
+
+      const pubKeyHash: string = contributor.pub_key_hash;
+
+      const tx_hash: string = txHash;
+      const outputIndex: number = index;
+
+      return { pubKeyHash, tx_hash, outputIndex };
+    } catch (error) {
+      console.error("Error getting owner id info :", error);
       throw error;
     }
   };
