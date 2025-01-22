@@ -64,7 +64,7 @@ const CreateBountyToken: React.FC = () => {
       // required_signatories: newBounty.required_signatories,
     });
     try {
-      // await mintBountyToken(newBounty.tasks, newBounty.reward, wallet);
+      await mintBountyToken(newBounty.tasks, newBounty.reward, wallet);
       console.log("Minted Bounty Token with issue URL:", newBounty.tasks);
 
       setNewBounty({
@@ -75,7 +75,7 @@ const CreateBountyToken: React.FC = () => {
       });
       setFormVisible(false);
     } catch (error) {
-      console.error("Error minting ID token:", error);
+      console.error("Error minting bounty token:", error);
     }
     // } else {
     //   console.error("Transaction failed");

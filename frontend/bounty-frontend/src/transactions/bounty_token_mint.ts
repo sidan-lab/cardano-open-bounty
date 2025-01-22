@@ -16,7 +16,6 @@ import {
   getBountyMintingPolicyId,
   getBountyMintingScriptCbor,
   getIdMintingPolicyId,
-  getIdSpendingScriptCbor,
 } from "./common";
 
 export const mintBountyToken = async (
@@ -51,7 +50,6 @@ export const mintBountyToken = async (
   // const usedAddress = (await wallet.getUsedAddresses())[0];
   // const { pubKeyHash } = deserializeAddress(usedAddress);
 
-  const idSpendingScriptCbor = getIdSpendingScriptCbor();
   const bountyMintingScriptCbor = getBountyMintingScriptCbor();
 
   const bountyBoardScriptAddress = getBountyBoardScriptAddress();
@@ -61,7 +59,7 @@ export const mintBountyToken = async (
 
   const api = new ApiMiddleware(wallet);
   try {
-    const { tokenName, tx_hash, outputIndex } = await api.getIdInfo();
+    const { tokenName, txHash, index } = await api.getIdNftTx();
     const oracleResult = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
     );
@@ -73,11 +71,7 @@ export const mintBountyToken = async (
         oracleResult.oracleTxHash,
         oracleResult.oracleOutputIndex
       )
-      .spendingPlutusScriptV3()
-      .txIn(tx_hash, outputIndex)
-      .txInRedeemerValue("", "Mesh")
-      .txInScript(idSpendingScriptCbor)
-      .txInInlineDatumPresent()
+      .txIn(txHash, index)
       .mintPlutusScriptV3()
       .mint("1", bountyMintingPolicyId, stringToHex(tokenName))
       .mintingScript(bountyMintingScriptCbor)
@@ -87,15 +81,16 @@ export const mintBountyToken = async (
           unit: bountyMintingPolicyId + stringToHex(tokenName),
           quantity: "1",
         },
+        {
+          unit: "lovelace",
+          quantity: (reward * 1000000).toString(),
+        },
       ])
       .txOutInlineDatumValue(bountyOutputDatum, "JSON")
       .txOut(changeAddress, [
         {
           unit: idMintingPolicyId + CIP68_222(stringToHex(tokenName)),
           quantity: "1",
-        }, {
-          unit: "lovelace",
-          quantity: (reward * 1000000).toString(),
         },
       ])
       .txInCollateral(
@@ -109,11 +104,11 @@ export const mintBountyToken = async (
       .complete();
 
     const signedTx = await wallet.signTx(unsignedTx, true);
-    const txHash = await wallet.submitTx(signedTx);
+    const submitTxHash = await wallet.submitTx(signedTx);
 
     // await insertMultiSigApiRoute(bounty_name, all_signatories, txHash, "0");
 
-    console.log(txHash);
+    console.log(submitTxHash);
   } catch (e) {
     console.error(e);
   }

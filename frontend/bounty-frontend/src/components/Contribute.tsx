@@ -1,12 +1,14 @@
 import React, { useState } from "react";
+import { BountyWithName } from "@/services/type";
 
 interface ContributeProps {
-  bounty: {
-    name: string;
-    tasks: string;
-    reward: string;
-    required_signatories: string[];
-  };
+  bounty: BountyWithName;
+  // bounty: {
+  //   name: string;
+  //   tasks: string;
+  //   reward: string;
+  //   required_signatories: string[];
+  // };
 }
 
 const Contribute: React.FC<ContributeProps> = ({ bounty }) => {
@@ -74,29 +76,35 @@ const Contribute: React.FC<ContributeProps> = ({ bounty }) => {
               </div>
               <form className="p-4" onSubmit={handleConfirm}>
                 <div className="mb-4 text-gray-300">
-                  <div className="mb-2">
-                    <label className="block text-sm font-medium">Bounty</label>
+                  <div className="mb-2 flex items-center justify-center">
+                    <label className="block text-sm font-medium mr-2">
+                      Bounty:
+                    </label>{" "}
                     <strong>{bounty.name}</strong>
                   </div>
-                  <div className="mb-2">
-                    <label className="block text-sm font-medium">Tasks</label>
+                  <div className="mb-2 flex items-center justify-center">
+                    <label className="block text-sm font-medium mr-2">
+                      Task:
+                    </label>
                     <a
-                      href={bounty.tasks}
+                      href={bounty.issue_url}
                       className="text-blue-400 hover:underline"
                     >
-                      {bounty.tasks}
+                      {bounty.issue_url}
                     </a>
                   </div>
-                  <div className="mb-2">
-                    <label className="block text-sm font-medium">Reward</label>
+                  <div className="mb-2 flex items-center justify-center">
+                    <label className="block text-sm font-medium mr-2">
+                      Reward:
+                    </label>{" "}
                     <span>{bounty.reward}</span>
                   </div>
-                  <div className="mb-4">
+                  {/* <div className="mb-4">
                     <label className="block text-sm font-medium">
                       Owners
                     </label>
                     <span>{bounty.required_signatories.join(", ")}</span>
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="mt-6 flex justify-center space-x-4">

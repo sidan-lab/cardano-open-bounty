@@ -1,4 +1,8 @@
-import { BlockfrostProvider, deserializeDatum } from "@meshsdk/core";
+import {
+  BlockfrostProvider,
+  deserializeDatum,
+  hexToString,
+} from "@meshsdk/core";
 import { AddressUtxo, AssetTransaction, BountyWithName } from "./type";
 import {
   Bounty,
@@ -55,7 +59,7 @@ export class BlockfrostService {
 
       const txHash = assetTransactions[0].tx_hash;
 
-      const index = assetTransactions[0].tx_index;
+      const index = 2;
 
       return { txHash, index };
     } catch (error) {
@@ -130,7 +134,7 @@ export class BlockfrostService {
             const bounty: Bounty = convertBountyDatum(datum);
 
             const bountyWithName: BountyWithName = {
-              name: name,
+              name: hexToString(name),
               issue_url: bounty.issue_url,
               reward: bounty.reward,
             };

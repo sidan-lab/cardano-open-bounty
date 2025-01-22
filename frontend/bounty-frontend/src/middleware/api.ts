@@ -20,6 +20,22 @@ export class ApiMiddleware {
     }
   };
 
+  getIdToken = async (): Promise<{
+    policyId: string;
+    tokenName: string;
+  }> => {
+    try {
+      const { policyId, assetName } = await this.wallet.getIdToken();
+
+      const tokenName: string = hexToString(assetName.slice(8));
+
+      return { policyId, tokenName };
+    } catch (error) {
+      console.error("Error getting id tx :", error);
+      throw error;
+    }
+  };
+
   getIdRefToken = async (): Promise<{
     policyId: string;
     refAssetName: string;
@@ -37,18 +53,21 @@ export class ApiMiddleware {
   };
 
   getIdNftTx = async (): Promise<{
+    tokenName: string;
     txHash: string;
     index: number;
   }> => {
     try {
       const { policyId, assetName } = await this.wallet.getIdToken();
 
+      const tokenName = hexToString(assetName.slice(8));
+
       const { txHash, index } = await this.blockFrost.getIdTokenTxHash(
         policyId,
         assetName
       );
 
-      return { txHash, index };
+      return { tokenName, txHash, index };
     } catch (error) {
       console.error("Error getting id tx :", error);
       throw error;
