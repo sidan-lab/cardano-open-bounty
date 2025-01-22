@@ -3,27 +3,15 @@ import {
   BlockfrostProvider,
   IWallet,
   MeshTxBuilder,
-  stringToHex,
   deserializeAddress,
 } from "@meshsdk/core";
-import {
-  getUtxoApiRoute,
-  insertUtxoApiRoute,
-  updateUtxoApiRoute,
-} from "../pages/common/api_common";
+
 import {
   getBountyBoardScriptCbor,
-  getBountyBoardScriptHash,
-  getBountyMintingPolicyId,
   getBountyMintingScriptCbor,
-  getIdMintingPolicyId,
   getIdMintingScriptCbor,
   getIdSpendingScriptCbor,
-  getIdSpendingScriptHash,
-  getOracleNFTAddress,
-  getOracleNFTSpendingScriptCbor,
 } from "./common";
-import { actionUpdate, oracleNFTDatum, OracleNFTDatum } from "./types";
 
 export const outputTxRefScrippt = async (wallet: IWallet) => {
   if (!wallet) {
@@ -58,37 +46,35 @@ export const outputTxRefScrippt = async (wallet: IWallet) => {
   const bountyMintingScriptCbor = getBountyMintingScriptCbor();
   const bountySpendingScriptCbor = getBountyBoardScriptCbor();
 
+  const scriptAddress = "";
+
   try {
-    const unsignedTx = await txBuilder
-      .spendingPlutusScriptV3()
-      .txInScript(idSpendingScriptCbor)
-      .txOutReferenceScript(idSpendingScriptCbor)
-      .spendingPlutusScriptV3()
-      .txInScript(bountySpendingScriptCbor)
-      .txOutReferenceScript(bountySpendingScriptCbor)
-      .mintPlutusScriptV3()
-      .mintingScript(idMintingScriptCbor)
+    const unsignedTxId = await txBuilder
+      .txOut(scriptAddress, [])
       .txOutReferenceScript(idMintingScriptCbor)
-      .mintPlutusScriptV3()
-      .mintingScript(bountyMintingScriptCbor)
-      .txOutReferenceScript(bountyMintingScriptCbor)
-      .txInCollateral(
-        collateral.input.txHash,
-        collateral.input.outputIndex,
-        collateral.output.amount,
-        collateral.output.address
-      )
-      .requiredSignerHash(pubKeyHash)
+      .txOut(scriptAddress, [])
+      .txOutReferenceScript(idSpendingScriptCbor)
       .changeAddress(changeAddress)
       .selectUtxosFrom(utxos.slice(1))
       .complete();
 
-    const signedTx = await wallet.signTx(unsignedTx, true);
-    const txHash = await wallet.submitTx(signedTx);
+    const signedTxId = await wallet.signTx(unsignedTxId, true);
+    const txHashId = await wallet.submitTx(signedTxId);
 
-    console.log(txHash);
+    const unsignedTxBounty = await txBuilder
+      .txOut(scriptAddress, [])
+      .txOutReferenceScript(bountyMintingScriptCbor)
+      .txOut(scriptAddress, [])
+      .txOutReferenceScript(bountySpendingScriptCbor)
+      .changeAddress(changeAddress)
+      .selectUtxosFrom(utxos.slice(1))
+      .complete();
 
-    await insertUtxoApiRoute("ref_script", "0", txHash);
+    const signedTxBounty = await wallet.signTx(unsignedTxBounty, true);
+    const txHashBounty = await wallet.submitTx(signedTxBounty);
+
+    console.log(txHashId);
+    console.log(txHashBounty);
   } catch (e) {
     console.error(e);
   }
