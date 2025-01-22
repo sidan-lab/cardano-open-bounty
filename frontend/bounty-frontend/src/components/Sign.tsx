@@ -1,40 +1,97 @@
+import { ContributorRedeemed } from "@/pages/common/type";
+import { BountyWithName } from "@/services/type";
+import { signBountyToken } from "@/transactions/sign_bounty";
+import { IWallet } from "@meshsdk/core";
 import React, { useState } from "react";
+type HandleSignFunction = (txHash: string, wallet: IWallet) => void;
 
-const Sign: React.FC = () => {
-  const bounty = {
-    name: "Project-A: Fix Bugs",
-    required_signatories: ["signatory1", "signatory2", "signatory3"],
-    contributer_signed: [
-      { name: "signatory1", github: "https://github.com/signatory1" },
-      { name: "signatory2", github: "https://github.com/signatory2" },
-    ],
-  };
+const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
+  bounty,
+  wallet,
+}) => {
+  const contributors: ContributorRedeemed[] = [
+    {
+      bountyName: "Alice",
+      gitHub: "https://github.com/alice/",
+      contributions: new Map([
+        ["mesh", 100],
+        ["sidan", 200],
+      ]),
+      unsignedTx: "0xa",
+      txHash: "0xa",
+      outputIndex: 0,
+    },
+    {
+      bountyName: "Bob",
+      gitHub: "https://github.com/bob/",
+      contributions: new Map([
+        ["mesh", 100],
+        ["sidan", 200],
+      ]),
+      unsignedTx: "0xa",
+      txHash: "0xa",
+      outputIndex: 0,
+    },
+    {
+      bountyName: "Bob",
+      gitHub: "https://github.com/bob/",
+      contributions: new Map([
+        ["mesh", 100],
+        ["sidan", 200],
+      ]),
+      unsignedTx: "0xa",
+      txHash: "0xa",
+      outputIndex: 0,
+    },
+    {
+      bountyName: "Bob",
+      gitHub: "https://github.com/bob/",
+      contributions: new Map([
+        ["mesh", 100],
+        ["sidan", 200],
+      ]),
+      unsignedTx: "0xa",
+      txHash: "0xa",
+      outputIndex: 0,
+    },
+  ];
 
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [currentContributors] = useState<
-    typeof bounty.contributer_signed
-  >(bounty.contributer_signed);
-  const [currentRequiredSigners, setCurrentRequiredSigners] = useState<
-    string[]
-  >(bounty.required_signatories);
+  const [currentContributors] = useState<typeof contributors>(contributors);
+  // const [currentRequiredSigners, setCurrentRequiredSigners] = useState<
+  //   string[]
+  // >(bounty.required_signatories);
 
-  const handleSignClick = () => {
+  const handleSignShowClick = () => {
     setShowModal(true);
+  };
+
+  const handleSignClick = (unsignedTx: string, wallet: IWallet) => {
+    return (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      handleSign(unsignedTx, wallet);
+    };
   };
 
   const closeModal = () => {
     setShowModal(false);
   };
 
-  const handleSign = () => {
-    // Handle signing logic here (e.g., mark the required signer as signed)
-    setCurrentRequiredSigners([]);
+  const handleSign: HandleSignFunction = async (unsignedTx: string) => {
+    try {
+      await signBountyToken(unsignedTx, wallet);
+      setShowModal(false);
+
+      console.log("Signed Bounty Token:", bounty.name);
+    } catch (error) {
+      console.error("Error signing bounty token:", error);
+    }
   };
 
   return (
     <div>
       <button
-        onClick={handleSignClick}
+        onClick={handleSignShowClick}
         className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-semibold rounded-lg text-base px-6 py-3 transition duration-200 ease-in-out"
       >
         Sign
@@ -51,33 +108,23 @@ const Sign: React.FC = () => {
               {/* Contributors Section */}
               <div className="bg-gray-800 p-4 rounded-lg shadow-md">
                 <h5 className="font-semibold text-lg mb-2">
-                  Contributors who signed:
+                  Contributors who want to Redeem:
                 </h5>
-                <ul className="mb-4">
+                <ul className="mb-4 max-h-40 overflow-y-auto">
                   {currentContributors.length > 0 ? (
-                    currentContributors.map((contributor, index) => (
-                      <li
-                        key={index}
-                        className="transition duration-200 ease-in-out transform hover:scale-105 mb-2"
-                      >
-                        <a
-                          href={contributor.github}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:underline"
-                        >
-                          {contributor.github}
-                        </a>
-                      </li>
-                    ))
+                    renderContributors(
+                      currentContributors,
+                      wallet,
+                      handleSignClick
+                    )
                   ) : (
-                    <li>No contributors have signed yet.</li>
+                    <li>No contributors to display.</li>
                   )}
                 </ul>
               </div>
 
               {/* Required Signers Section */}
-              <div className="bg-gray-800 p-4 rounded-lg shadow-md">
+              {/* <div className="bg-gray-800 p-4 rounded-lg shadow-md">
                 <h5 className="font-semibold text-lg mb-2">
                   Required signers yet to sign:
                 </h5>
@@ -90,17 +137,10 @@ const Sign: React.FC = () => {
                     <li>All required signers have signed.</li>
                   )}
                 </ul>
-              </div>
+              </div> */}
             </div>
 
             <div className="flex flex-col mt-4">
-              <button
-                className="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200"
-                onClick={handleSign}
-              >
-                Sign
-              </button>
-
               <button
                 className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition duration-200"
                 onClick={closeModal}
@@ -114,5 +154,49 @@ const Sign: React.FC = () => {
     </div>
   );
 };
+
+function renderContributors(
+  contributors: ContributorRedeemed[],
+  wallet: IWallet,
+  handleSignClick: (
+    txHash: string,
+    wallet: IWallet
+  ) => React.MouseEventHandler<HTMLButtonElement>
+) {
+  return contributors.map((contributor, index) => (
+    <li
+      key={index}
+      className="transition duration-200 ease-in-out transform mb-2"
+    >
+      <div className="grid grid-cols-4">
+        <span className="mr-2">{contributor.bountyName}</span>
+        <a
+          href={contributor.gitHub}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:underline break-words"
+        >
+          ({contributor.gitHub})
+        </a>
+        <div>
+          <h6 className="font-semibold text-sm">Contributions:</h6>
+          <ul>
+            {Array.from(contributor.contributions).map(([repo, reward], i) => (
+              <li key={i} className="text-sm">
+                <span className="font-medium">{repo}:</span> {reward}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <button
+          className="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200"
+          onClick={handleSignClick(contributor.unsignedTx, wallet)}
+        >
+          Sign
+        </button>
+      </div>
+    </li>
+  ));
+}
 
 export default Sign;

@@ -1,19 +1,28 @@
 import {
-  ContributerDatum,
-  OracleCounterDatum,
-  ContributionDatum,
-  BountyDatum,
-} from "@/pages/api/type";
-import {
-  applyParamsToScript,
+  Asset,
   BlockfrostProvider,
   deserializeDatum,
-  mTuple,
-  resolveScriptHash,
-  stringToHex,
+  hexToString,
 } from "@meshsdk/core";
-import blueprint from "../../../../aiken-workspace/plutus.json";
-import { AddressUtxo, AssetTransaction, Bounty, Contribution } from "./type";
+import { AddressUtxo, AssetTransaction, BountyWithName } from "./type";
+import {
+  Bounty,
+  BountyDatum,
+  Contributor,
+  convertBountyDatum,
+  convertOracleCounterDatum,
+  OracleCounter,
+  OracleCounterDatum,
+} from "@/transactions/types";
+import {
+  getBountyMintingPolicyId,
+  getIdMintingPolicyId,
+} from "@/transactions/common";
+import {
+  getAssetNameByPolicyId,
+  getOutputIndexAndDatumByAsset,
+  getOutputIndexByAsset,
+} from "./common";
 
 export class BlockfrostService {
   blockFrost: BlockfrostProvider;
@@ -23,16 +32,17 @@ export class BlockfrostService {
   getOracleCounterDatumn = async (
     txHash: string,
     index: number
-  ): Promise<{ count: number }> => {
+  ): Promise<OracleCounter> => {
     try {
       const utxo = await this.blockFrost.fetchUTxOs(txHash, index);
 
-      const datum = utxo[0].output.plutusData!;
+      const plutusData = utxo[0].output.plutusData!;
 
-      const data: OracleCounterDatum = deserializeDatum(datum);
-      const count = Number(data.fields[0].int);
+      const datum: OracleCounterDatum = deserializeDatum(plutusData);
 
-      return { count };
+      const oracleCounter: OracleCounter = convertOracleCounterDatum(datum);
+
+      return oracleCounter;
     } catch (error) {
       console.error("Error fetching count:", error);
       throw error;
@@ -43,17 +53,26 @@ export class BlockfrostService {
     policyId: string,
     assetName: string
   ): Promise<{ txHash: string; index: number }> => {
-    const asset = policyId + stringToHex(assetName);
+    const asset = policyId + assetName;
     const url = `/assets/${asset}/transactions`;
     try {
       const assetTransactions: AssetTransaction[] = await this.blockFrost.get(
         url
       );
 
-      const txHash = assetTransactions[0].tx_hash;
+      const txHash = assetTransactions[assetTransactions.length - 1].tx_hash;
 
-      const index = assetTransactions[0].tx_index;
+      const utxo = await this.blockFrost.fetchUTxOs(txHash);
+      const asset: Asset = {
+        unit: policyId + assetName,
+        quantity: "1",
+      };
 
+      const index = getOutputIndexByAsset(utxo, asset);
+
+      if (!index) {
+        throw new Error("Error getIdTokenTxHash cannot find outputIndex");
+      }
       return { txHash, index };
     } catch (error) {
       console.error("Error geting idToken txHash:", error);
@@ -61,94 +80,123 @@ export class BlockfrostService {
     }
   };
 
-  getIdRefTxHash = async (
+  getIdRefTxAndDatum = async (
     policyId: string,
     assetName: string
-  ): Promise<{ txHash: string; index: number }> => {
-    const asset = policyId + stringToHex(assetName);
+  ): Promise<{
+    txHash: string;
+    index: number;
+    contributor: Contributor;
+  }> => {
+    const asset = policyId + assetName;
     const url = `/assets/${asset}/transactions`;
     try {
       const assetTransactions: AssetTransaction[] = await this.blockFrost.get(
         url
       );
 
-      const txHash = assetTransactions[0].tx_hash;
+      const txHash = assetTransactions[assetTransactions.length - 1].tx_hash;
 
-      const index = assetTransactions[0].tx_index;
+      const utxo = await this.blockFrost.fetchUTxOs(txHash);
+      const asset: Asset = {
+        unit: policyId + assetName,
+        quantity: "1",
+      };
 
-      return { txHash, index };
+      const { outputIndex, contributor } = getOutputIndexAndDatumByAsset(
+        utxo,
+        asset
+      );
+
+      if (!outputIndex || !contributor) {
+        throw new Error("Error getIdTokenTxHash cannot find outputIndex");
+      }
+
+      return { txHash, index: outputIndex, contributor };
     } catch (error) {
       console.error("Error geting idToken txHash:", error);
       throw error;
     }
   };
 
-  getIdTokenDatum = async (
-    txHash: string,
-    index: number
-  ): Promise<{ gitHub: string; contributions: Contribution[] }> => {
-    try {
-      const utxo = await this.blockFrost.fetchUTxOs(txHash, index);
-
-      const datum = utxo[0].output.plutusData!;
-
-      const data: ContributerDatum = deserializeDatum(datum);
-      const gitHub = data.fields[0].bytes;
-      const contributions: Contribution[] = [];
-      const contributionDatum: ContributionDatum[] = data.fields[1].list;
-      contributionDatum.forEach((item) => {
-        const all_signs: string[] = [];
-        item.fields[0].list.forEach((sign) => {
-          all_signs.push(sign.toString());
-        });
-
-        const contribution: Contribution = {
-          all_signatories: all_signs,
-          reward: Number(item.fields[1].int),
-        };
-        contributions.push(contribution);
-      });
-
-      return { gitHub, contributions };
-    } catch (error) {
-      console.error("Error fetching count:", error);
-      throw error;
-    }
-  };
-
-  getAllBountyDatumn = async (
-    address: string
-  ): Promise<{ bounties: Bounty[] }> => {
+  getAllBountyDatumn = async (address: string): Promise<BountyWithName[]> => {
     const url = `/addresses/${address}/utxos
 `;
     try {
       const addressUtxos: AddressUtxo[] = await this.blockFrost.get(url);
 
-      const bounties: Bounty[] = [];
+      const bounties: BountyWithName[] = [];
 
-      addressUtxos.forEach((uxto) => {
-        if (uxto.inline_datum) {
-          const data: BountyDatum = deserializeDatum(uxto.inline_datum);
-          const all_signs: string[] = [];
-          data.fields[2].list.forEach((sign) => {
-            all_signs.push(sign.toString());
-          });
+      addressUtxos.forEach((utxo) => {
+        if (utxo.inline_datum) {
+          const name = getAssetNameByPolicyId(
+            utxo.amount,
+            this.bountyMintingPolicyId
+          );
 
-          const bounty: Bounty = {
-            name: uxto.amount
-              .find((a) => a.unit.slice(0, 56) == this.bountyMintingPolicyId)!
-              .unit.slice(56),
-            issue_url: data.fields[0].toString(),
-            reward: Number(data.fields[1].int),
-            all_signatories: all_signs,
-          };
-          bounties.push(bounty);
+          if (name) {
+            const datum: BountyDatum = deserializeDatum(utxo.inline_datum);
+
+            const bounty: Bounty = convertBountyDatum(datum);
+
+            const bountyWithName: BountyWithName = {
+              name: hexToString(name),
+              issue_url: bounty.issue_url,
+              reward: bounty.reward,
+              txHash: utxo.tx_hash,
+              outputIndex: utxo.output_index,
+            };
+            bounties.push(bountyWithName);
+          }
         }
       });
 
-      return { bounties };
+      return bounties;
     } catch (error) {
       console.error("Error geting all bounty:", error);
+      throw error;
+    }
+  };
+
+  //todo: fix api error
+  getOwnBountyDatumn = async (
+    address: string,
+    asset: string
+  ): Promise<BountyWithName[]> => {
+    const url = `/addresses/${address}/utxos/${asset}
+`;
+    try {
+      const addressUtxos: AddressUtxo[] = await this.blockFrost.get(url);
+
+      const bounties: BountyWithName[] = [];
+
+      addressUtxos.forEach((utxo) => {
+        if (utxo.inline_datum) {
+          const name = getAssetNameByPolicyId(
+            utxo.amount,
+            this.bountyMintingPolicyId
+          );
+
+          if (name) {
+            const datum: BountyDatum = deserializeDatum(utxo.inline_datum);
+
+            const bounty: Bounty = convertBountyDatum(datum);
+
+            const bountyWithName: BountyWithName = {
+              name: name,
+              issue_url: bounty.issue_url,
+              reward: bounty.reward,
+              txHash: utxo.tx_hash,
+              outputIndex: utxo.output_index,
+            };
+            bounties.push(bountyWithName);
+          }
+        }
+      });
+
+      return bounties;
+    } catch (error) {
+      console.error("Error geting own bounty:", error);
       throw error;
     }
   };
@@ -158,34 +206,8 @@ export class BlockfrostService {
       process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY!
     );
 
-    const idMintingScriptCbor = applyParamsToScript(
-      blueprint.validators[5]!.compiledCode,
-      [
-        stringToHex(`${process.env.NEXT_PUBLIC_COLLECTION_NAME!}`),
-        mTuple(
-          process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-          process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-        ),
-        process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_POLICY_ID!,
-      ],
-      "Mesh"
-    );
-    this.idMintingPolicyId = resolveScriptHash(idMintingScriptCbor, "V3");
+    this.idMintingPolicyId = getIdMintingPolicyId();
 
-    const bountyMintingScriptCbor = applyParamsToScript(
-      blueprint.validators[3]!.compiledCode,
-      [
-        mTuple(
-          process.env.NEXT_PUBLIC_ORACLE_NFT_POLICY_ID!,
-          process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
-        ),
-      ],
-      "Mesh"
-    );
-    const bountyMintingPolicyId = resolveScriptHash(
-      bountyMintingScriptCbor,
-      "V3"
-    );
-    this.bountyMintingPolicyId = bountyMintingPolicyId;
+    this.bountyMintingPolicyId = getBountyMintingPolicyId();
   }
 }

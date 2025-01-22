@@ -8,16 +8,16 @@ use cocktail.{
 }
 use identity_token_type.{ContributerDatum}
 use mocktail.{
-  complete, mock_policy_id, mock_pub_key_address, mock_script_address,
-  mock_tx_hash, mocktail_tx, ref_tx_in, ref_tx_in_inline_datum, tx_in,
-  tx_in_inline_datum,
+  complete, mint, mock_policy_id, mock_pub_key_address, mock_pub_key_hash,
+  mock_script_address, mock_tx_hash, mocktail_tx, ref_tx_in,
+  ref_tx_in_inline_datum, tx_in, tx_in_inline_datum,
 }
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
 validator id_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
   spend(_datum, _redeemer, input: OutputReference, transaction: Transaction) {
-    let Transaction { inputs, reference_inputs, .. } = transaction
+    let Transaction { inputs, reference_inputs, mint, .. } = transaction
 
     let OracleDatum { bounty_token_policy_id, .. }: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
@@ -35,11 +35,10 @@ validator id_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
         inputs_with(inputs, policy_id, nft_asset_name),
       )
     is {
-      ([bounty_input], [_]) -> {
+      ([_], [_]) -> {
         let is_ref_token_name_correct =
           ref_asset_name |> bytearray.starts_with(prefix: cip.cip68_100_prefix)
-        expect [(only_burn_policy, _, only_burn_quantity)] =
-          value_tokens(bounty_input.output.value)
+        expect [(only_burn_policy, _, only_burn_quantity)] = value_tokens(mint)
         let is_bounty_completed =
           only_burn_policy == bounty_token_policy_id && only_burn_quantity == -1
         is_ref_token_name_correct? && is_bounty_completed?
@@ -112,7 +111,12 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
       )
     |> tx_in_inline_datum(
         is_id_nft_check,
-        ContributerDatum { metadata: [], version: 1, contributions: [] },
+        ContributerDatum {
+          metadata: [],
+          version: 1,
+          contributions: [],
+          pub_key_hash: mock_pub_key_hash(0),
+        },
       )
     |> tx_in(
         is_bounty_nft_check,
@@ -121,6 +125,7 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
         from_asset(mock_policy_id(0), "bounty", 1),
         from_script("bounty_board_hold"),
       )
+    |> mint(True, -1, mock_policy_id(0), "bounty")
     |> complete()
 }
 

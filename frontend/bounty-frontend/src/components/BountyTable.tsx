@@ -6,152 +6,53 @@ import SearchBars from "./SearchBar";
 import { ApiMiddleware } from "@/middleware/api";
 import Contribute from "./Contribute";
 import Sign from "./Sign";
-interface Bounty {
-  name: string;
-  tasks: string;
-  reward: string;
-  required_signatories: string[];
-}
+import { BountyWithName } from "@/services/type";
+// interface Bounty {
+//   name: string;
+//   tasks: string;
+//   reward: string;
+//   // required_signatories: string[];
+// }
 
 const BountyTable: React.FC = () => {
   const { wallet, connected } = useWallet();
   const [showOwnBountyBoard, setShowOwnBountyBoard] = useState<boolean>(false);
-  
-  const [bounties, setBounties] = useState<Bounty[]>([
-    {
-      name: "Project-A: Fix Bugs",
-      tasks: "https://example.com/task1",
-      reward: "50 ADA",
-      required_signatories: ["signatory1", "signatory2"],
-    },
-    {
-      name: "Project-A: Develop Feature X",
-      tasks: "https://example.com/task2",
-      reward: "75 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-A: Update Documentation",
-      tasks: "https://example.com/task3",
-      reward: "20 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-B: Conduct Security Audit",
-      tasks: "https://example.com/task4",
-      reward: "100 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-C: Design UI Mockup",
-      tasks: "https://example.com/task5",
-      reward: "30 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-D: Create Marketing Plan",
-      tasks: "https://example.com/task6",
-      reward: "60 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-D: Analyze User Feedback",
-      tasks: "https://example.com/task7",
-      reward: "40 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-E: Optimize Performance",
-      tasks: "https://example.com/task8",
-      reward: "80 ADA",
-      required_signatories: ["signatory1"],
-    },
-    {
-      name: "Project-F: Setup Continuous Integration",
-      tasks: "https://example.com/task9",
-      reward: "70 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-G: Develop API Endpoints",
-      tasks: "https://example.com/task10",
-      reward: "90 ADA",
-      required_signatories: [
-        "signatory1",
-        "signatory2",
-        "signatory3",
-        "signtory4",
-      ],
-    },
-    {
-      name: "Project-H: Migrate Database",
-      tasks: "https://example.com/task11",
-      reward: "110 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-I: Create User Stories",
-      tasks: "https://example.com/task12",
-      reward: "55 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-J: Write Unit Tests",
-      tasks: "https://example.com/task13",
-      reward: "65 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-    {
-      name: "Project-K: Conduct Market Research",
-      tasks: "https://example.com/task14",
-      reward: "95 ADA",
-      required_signatories: ["signatory1", "signatory2"],
-    },
-    {
-      name: "Project-L: Implement Security Measures",
-      tasks: "https://example.com/task15",
-      reward: "125 ADA",
-      required_signatories: ["signatory1", "signatory2", "signatory3"],
-    },
-  ]);
-  const [userBounties] = useState<Bounty[]>([
-    {
-      name: "Own Project-A: Build Feature Y",
-      tasks: "https://example.com/task16",
-      reward: "120 ADA",
-      required_signatories: ["signatory1"],
-    },
-    {
-      name: "Own Project-B: Deploy to Production",
-      tasks: "https://example.com/task17",
-      reward: "150 ADA",
-      required_signatories: ["signatory1"],
-    },
-  ]);
-  
+
+  const [bounties, setBounties] = useState<BountyWithName[]>([]);
+  const [userBounties, setUserBounties] = useState<BountyWithName[]>([]);
+
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [hasIDToken, setHasIDToken] = useState(false);
-  
+
   useEffect(() => {
     const checkIDTokenOwnership = async () => {
       const api = new ApiMiddleware(wallet);
       const hasId = await api.findIdtoken();
+      const { tokenName } = await api.getIdToken();
+
+      const allBounties: BountyWithName[] = await api.getAllBounty();
+      const ownBounties: BountyWithName[] = allBounties.filter(
+        (bounty) => bounty.name === tokenName
+      );
+
+      setBounties(allBounties);
+      setUserBounties(ownBounties);
       setHasIDToken(hasId.hasIdToken);
     };
     if (connected) {
       checkIDTokenOwnership();
     }
-  }, [ connected, wallet]);
-  
+  }, [connected, wallet]);
+
   const toggleBountyBoard = () => {
     setShowOwnBountyBoard((prev) => !prev);
   };
 
-  const handleCreateBounty = (newBounty: Bounty) => {
-    setBounties((prevState) => [...prevState, newBounty]);
-  };
+  // const handleCreateBounty = (newBounty: Bounty) => {
+  //   setBounties((prevState) => [...prevState, newBounty]);
+  // };
 
   const handleRowsPerPageChange = (
     event: React.ChangeEvent<HTMLSelectElement>
@@ -163,8 +64,8 @@ const BountyTable: React.FC = () => {
   const filteredBounties = bounties.filter(
     (bounty) =>
       bounty.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bounty.tasks.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bounty.reward.includes(searchQuery)
+      bounty.issue_url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bounty.reward.toString().includes(searchQuery)
   );
 
   const totalPages = Math.ceil(filteredBounties.length / rowsPerPage);
@@ -193,9 +94,7 @@ const BountyTable: React.FC = () => {
         </button>
         <div className="flex space-x-2">
           {!hasIDToken && <CreateIDToken />}
-          {connected && hasIDToken && (
-            <CreateBountyToken onCreateBounty={handleCreateBounty} />
-          )}
+          {true && true && <CreateBountyToken />}
         </div>
       </div>
 
@@ -263,17 +162,17 @@ const BountyTable: React.FC = () => {
                     </th>
                     <td className="px-6 py-4 text-white">
                       <a
-                        href={bounty.tasks}
+                        href={bounty.issue_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:underline"
                       >
-                        {bounty.tasks}
+                        {bounty.issue_url}
                       </a>
                     </td>
-                    <td className="px-6 py-4 text-white">{bounty.reward}</td>
+                    <td className="px-6 py-4 text-white">{`${bounty.reward} ADA`}</td>
                     <td className="px-8 py-4 flex justify-center space-x-4">
-                      <Sign />
+                      <Sign bounty={bounty} wallet={wallet} />
                     </td>
                   </tr>
                 ))
@@ -323,15 +222,15 @@ const BountyTable: React.FC = () => {
                   </th>
                   <td className="px-6 py-4 text-white">
                     <a
-                      href={bounty.tasks}
+                      href={bounty.issue_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-400 hover:underline"
                     >
-                      {bounty.tasks}
+                      {bounty.issue_url}
                     </a>
                   </td>
-                  <td className="px-6 py-4 text-white">{bounty.reward}</td>
+                  <td className="px-6 py-4 text-white">{`${bounty.reward} ADA`}</td>
                   <td className="px-8 py-4 flex justify-center space-x-4">
                     <Contribute bounty={bounty} />
                   </td>

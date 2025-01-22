@@ -1,30 +1,27 @@
-import React, { useState } from "react";
+import { mintBountyToken } from "@/transactions/bounty_token_mint";
+import { useWallet } from "@meshsdk/react";
+import React, { useEffect, useState } from "react";
 // import { mintBountyToken } from "@/pages/transactions/bounty_token_mint";
 // import { useWallet } from "@meshsdk/react";
 
 interface Bounty {
-  name: string;
   tasks: string;
-  reward: string;
-  required_signatories: string[];
+  reward: number;
 }
 
-interface CreateBountyTokenProps {
-  onCreateBounty: (bounty: Bounty) => void;
-}
-
-const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
-  onCreateBounty,
-}) => {
+const CreateBountyToken: React.FC = () => {
   const [formVisible, setFormVisible] = useState(false);
   const [, setIsLoading] = useState(false);
-  // const { wallet } = useWallet();
+  const { wallet, connected } = useWallet();
   const [newBounty, setNewBounty] = useState<Bounty>({
-    name: "",
     tasks: "",
-    reward: "",
-    required_signatories: [],
+    reward: 100,
   });
+
+  useEffect(() => {
+    if (connected) {
+    }
+  }, [connected, wallet]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -36,39 +33,53 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
     }));
   };
 
-  const handleSignatoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  // const handleSignatoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
 
-    const signatories = value.split(",").map((s) => s.trim());
-    setNewBounty((prevState) => ({
-      ...prevState,
-      required_signatories: signatories,
-    }));
-  };
+  //   const signatories = value.split(",").map((s) => s.trim());
+  //   setNewBounty((prevState) => ({
+  //     ...prevState,
+  //     required_signatories: signatories,
+  //   }));
+  // };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
-    async function performTransaction(): Promise<boolean> {
-      const success = true;
-      return success;
-    }
+    // async function performTransaction(): Promise<boolean> {
+    //   const success = true;
+    //   return success;
+    // }
 
-    const transactionSuccessful = await performTransaction();
+    // const transactionSuccessful = await performTransaction();
     setIsLoading(false);
 
-    if (transactionSuccessful) {
-      onCreateBounty(newBounty);
+    // if (transactionSuccessful) {
+    // onCreateBounty(newBounty);
+    setNewBounty({
+      // name: newBounty.name,
+      tasks: newBounty.tasks,
+      reward: newBounty.reward,
+      // required_signatories: newBounty.required_signatories,
+    });
+    try {
+      await mintBountyToken(newBounty.tasks, Number(newBounty.reward), wallet);
+      console.log("Minted Bounty Token with issue URL:", newBounty.tasks);
+
       setNewBounty({
-        name: newBounty.name,
-        tasks: newBounty.tasks,
-        reward: newBounty.reward,
-        required_signatories: newBounty.required_signatories,
+        // name: newBounty.name,
+        tasks: "",
+        reward: 100,
+        // required_signatories: newBounty.required_signatories,
       });
-    } else {
-      console.error("Transaction failed");
+      setFormVisible(false);
+    } catch (error) {
+      console.error("Error minting bounty token:", error);
     }
+    // } else {
+    //   console.error("Transaction failed");
+    // }
   };
 
   return (
@@ -110,7 +121,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
                   </svg>
                 </button>
               </div>
-              <div className="mb-4">
+              {/* <div className="mb-4">
                 <label
                   htmlFor="Bounty name"
                   className="block mb-2 text-sm font-medium text-gray-300"
@@ -138,7 +149,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
                     className="rounded-none rounded-r-lg bg-gray-700 border border-gray-600 text-gray-300 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400"
                   />
                 </div>
-              </div>
+              </div> */}
               <div className="mb-4">
                 <label
                   htmlFor="Bounty tasks"
@@ -197,7 +208,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
                   />
                 </div>
               </div>
-              <div className="mb-4">
+              {/* <div className="mb-4">
                 <label
                   htmlFor="signatories"
                   className="block text-gray-300 text-sm font-medium mb-2"
@@ -223,7 +234,7 @@ const CreateBountyToken: React.FC<CreateBountyTokenProps> = ({
                     className="rounded-lg bg-gray-700 border border-gray-600 text-gray-300 focus:ring-blue-500 focus:border-blue-500 block w-full text-sm p-2.5"
                   />
                 </div>
-              </div>
+              </div> */}
 
               <button
                 type="submit"

@@ -2,7 +2,7 @@ use cardano/transaction.{Datum, InlineDatum} as tx
 
 pub type Action {
   CheckMint
-  CheckBurn
+  CheckBurn(ByteArray)
 }
 
 pub type BountyDatum {

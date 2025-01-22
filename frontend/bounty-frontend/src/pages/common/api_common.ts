@@ -1,4 +1,5 @@
 import axios from "axios";
+import { ContributorRedeemed } from "./type";
 
 export const updateUtxoApiRoute = async (
   name: string,
@@ -202,4 +203,73 @@ export const deleteMultiSigApiRoute = async (bountyName: string) => {
     config
   );
   console.log("delete multisig res", res.data);
+};
+
+export const insertUnsignedBountyApiRoute = async (
+  bountyName: string,
+  gitHub: string,
+  contributions: Map<string, number>,
+  unsignedTx: string,
+  txHash: string,
+  outputIndex: number
+) => {
+  const contributionsJson = JSON.stringify(Array.from(contributions.entries()));
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/insert_unsigned_bounty",
+    JSON.stringify({
+      bountyName: bountyName,
+      gitHub: gitHub,
+      contributions: contributionsJson,
+      unsignedTx: unsignedTx,
+      txHash: txHash,
+      outputIndex: outputIndex,
+    }),
+    config
+  );
+  console.log("insert unsigned bounty res", res.data);
+};
+
+export const deleteUnsignedBountyApiRoute = async (unsignedTx: string) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/delete_unsigned_bounty",
+    JSON.stringify({
+      unsignedTx: unsignedTx,
+    }),
+    config
+  );
+  console.log("delete unsigned bounty res", res.data);
+};
+
+export const getUnsignedBountyApiRoute = async (
+  txHash: string,
+  outputIndex: number
+): Promise<ContributorRedeemed[]> => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await axios.post(
+    "../api/post/get_unsigned_bounty",
+    JSON.stringify({
+      txHash: txHash,
+      outputIndex: outputIndex,
+    }),
+    config
+  );
+  const { contributorRedeemed } = res.data;
+  return contributorRedeemed;
 };

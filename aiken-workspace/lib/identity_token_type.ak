@@ -1,4 +1,3 @@
-use aiken/crypto.{VerificationKeyHash}
 use cardano/assets.{AssetName, PolicyId}
 use cardano/transaction.{Datum, InlineDatum} as tx
 
@@ -7,10 +6,17 @@ pub type Action {
   CheckBurn
 }
 
+pub type IdRedeemr {
+  action: Action,
+  token_name: ByteArray,
+}
+
 pub type ContributerDatum {
   metadata: Pairs<Data, Data>,
+  // GitHub: ByteArray
   version: Int,
-  contributions: Pairs<VerificationKeyHash, Int>,
+  contributions: Pairs<ByteArray, Int>,
+  pub_key_hash: ByteArray,
 }
 
 pub fn to_contributer_datum(data: Datum) -> ContributerDatum {

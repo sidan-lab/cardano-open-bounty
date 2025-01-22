@@ -1,5 +1,5 @@
 import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../../aiken-workspace/plutus.json";
+import blueprint from "../../../../aiken-workspace/plutus.json";
 import {
   BlockfrostProvider,
   IWallet,
@@ -7,14 +7,14 @@ import {
   resolveScriptHash,
   stringToHex,
   deserializeAddress,
-  applyCborEncoding,
-  serializePlutusScript,
   mOutputReference,
   Data,
 } from "@meshsdk/core";
-import { insertUtxoApiRoute } from "./api_common";
+import { insertUtxoApiRoute } from "../pages/common/api_common";
+import { actionMint, oracleNFTDatum, OracleNFTDatum } from "./types";
+import { getOracleNFTAddress } from "./common";
 
-export const mintOracleCounter = async (wallet: IWallet) => {
+export const mintOracleNFT = async (wallet: IWallet) => {
   if (!wallet) {
     alert("Please connect your wallet");
     return;
@@ -46,54 +46,22 @@ export const mintOracleCounter = async (wallet: IWallet) => {
     paramUtxo.input.outputIndex
   );
 
-  const idOracleCounterSpendingScriptCbor = applyCborEncoding(
-    blueprint.validators[12]!.compiledCode
-  );
-
-  const idOracleCounterAddress = serializePlutusScript(
-    {
-      code: idOracleCounterSpendingScriptCbor,
-      version: "V3",
-    },
-    undefined,
-    0
-  ).address;
-
-  const idOracleCounterMintingScriptCbor = applyParamsToScript(
-    blueprint.validators[14]!.compiledCode,
+  const OracleNFTMintingScriptCbor = applyParamsToScript(
+    blueprint.validators[11]!.compiledCode,
     [param]
   );
 
-  const idOracleCounterPolicyId = resolveScriptHash(
-    idOracleCounterMintingScriptCbor,
-    "V3"
-  );
+  const OracleNFTPolicyId = resolveScriptHash(OracleNFTMintingScriptCbor, "V3");
 
-  const oracleDatum = JSON.stringify({
-    constructor: 0,
-    fields: [
-      {
-        int: 0,
-      },
-      {
-        constructor: 0,
-        fields: [
-          {
-            constructor: 0,
-            fields: [
-              {
-                bytes: pubKeyHash,
-              },
-            ],
-          },
-          {
-            constructor: 1,
-            fields: [],
-          },
-        ],
-      },
-    ],
-  });
+  const oracleNFTAddress = getOracleNFTAddress();
+
+  const oracleDatum: OracleNFTDatum = oracleNFTDatum(
+    pubKeyHash,
+    pubKeyHash,
+    pubKeyHash,
+    pubKeyHash,
+    pubKeyHash
+  );
 
   try {
     const unsignedTx = await txBuilder
@@ -104,18 +72,18 @@ export const mintOracleCounter = async (wallet: IWallet) => {
         paramUtxo.output.address
       )
       .mintPlutusScriptV3()
-      .mint("1", idOracleCounterPolicyId, stringToHex(""))
-      .mintingScript(idOracleCounterMintingScriptCbor)
-      .mintRedeemerValue(
-        JSON.stringify({
-          constructor: 0,
-          fields: [],
-        }),
-        "JSON"
+      .mint(
+        "1",
+        OracleNFTPolicyId,
+        stringToHex(`${process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME}`)
       )
-      .txOut(idOracleCounterAddress, [
+      .mintingScript(OracleNFTMintingScriptCbor)
+      .mintRedeemerValue(actionMint, "JSON")
+      .txOut(oracleNFTAddress, [
         {
-          unit: idOracleCounterPolicyId + stringToHex(""),
+          unit:
+            OracleNFTPolicyId +
+            stringToHex(`${process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME}`),
           quantity: "1",
         },
       ])
@@ -132,12 +100,11 @@ export const mintOracleCounter = async (wallet: IWallet) => {
 
     const signedTx = await wallet.signTx(unsignedTx, true);
     const txHash = await wallet.submitTx(signedTx);
-
     console.log(txHash);
-    console.log(idOracleCounterPolicyId);
+    console.log(OracleNFTPolicyId);
 
     await insertUtxoApiRoute(
-      process.env.NEXT_PUBLIC_ID_ORACLE_COUNTER_ASSET_NAME!,
+      process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!,
       "0",
       txHash
     );

@@ -7,6 +7,8 @@ export default async function handler(
 ) {
   if (req.method === "POST") {
     try {
+      console.log("aaaaa");
+
       const { name } = req.body;
       const sql = neon(process.env.DATABASE_URL!);
       const queryResult = await sql(
