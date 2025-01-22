@@ -11,40 +11,48 @@ const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
 }) => {
   const contributors: ContributorRedeemed[] = [
     {
-      name: "Alice",
+      bountyName: "Alice",
       gitHub: "https://github.com/alice/",
       contributions: new Map([
         ["mesh", 100],
         ["sidan", 200],
       ]),
+      unsignedTx: "0xa",
       txHash: "0xa",
+      outputIndex: 0,
     },
     {
-      name: "Bob",
+      bountyName: "Bob",
       gitHub: "https://github.com/bob/",
       contributions: new Map([
         ["mesh", 100],
         ["sidan", 200],
       ]),
+      unsignedTx: "0xa",
       txHash: "0xa",
+      outputIndex: 0,
     },
     {
-      name: "Bob",
+      bountyName: "Bob",
       gitHub: "https://github.com/bob/",
       contributions: new Map([
         ["mesh", 100],
         ["sidan", 200],
       ]),
+      unsignedTx: "0xa",
       txHash: "0xa",
+      outputIndex: 0,
     },
     {
-      name: "Bob",
+      bountyName: "Bob",
       gitHub: "https://github.com/bob/",
       contributions: new Map([
         ["mesh", 100],
         ["sidan", 200],
       ]),
+      unsignedTx: "0xa",
       txHash: "0xa",
+      outputIndex: 0,
     },
   ];
 
@@ -58,10 +66,10 @@ const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
     setShowModal(true);
   };
 
-  const handleSignClick = (txHash: string, wallet: IWallet) => {
+  const handleSignClick = (unsignedTx: string, wallet: IWallet) => {
     return (event: React.MouseEvent<HTMLButtonElement>) => {
       event.preventDefault();
-      handleSign(txHash, wallet);
+      handleSign(unsignedTx, wallet);
     };
   };
 
@@ -69,9 +77,9 @@ const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
     setShowModal(false);
   };
 
-  const handleSign: HandleSignFunction = async (txHash: string) => {
+  const handleSign: HandleSignFunction = async (unsignedTx: string) => {
     try {
-      await signBountyToken(txHash, wallet);
+      await signBountyToken(unsignedTx, wallet);
       setShowModal(false);
 
       console.log("Signed Bounty Token:", bounty.name);
@@ -161,7 +169,7 @@ function renderContributors(
       className="transition duration-200 ease-in-out transform mb-2"
     >
       <div className="grid grid-cols-4">
-        <span className="mr-2">{contributor.name}</span>
+        <span className="mr-2">{contributor.bountyName}</span>
         <a
           href={contributor.gitHub}
           target="_blank"
@@ -182,7 +190,7 @@ function renderContributors(
         </div>
         <button
           className="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200"
-          onClick={handleSignClick(contributor.txHash, wallet)}
+          onClick={handleSignClick(contributor.unsignedTx, wallet)}
         >
           Sign
         </button>
