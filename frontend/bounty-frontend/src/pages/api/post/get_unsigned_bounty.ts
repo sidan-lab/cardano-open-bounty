@@ -16,27 +16,34 @@ export default async function handler(
       );
 
       if (queryResult.length > 0) {
-        const {
-          bountyName: bountyName,
-          gitHub: gitHub,
-          contributions: contributionsJSON,
-          unsignedTx: unsignedTx,
-          txHash: txHash,
-          outputIndex: outputIndex,
-        } = queryResult[0];
+        const contributorsRedeemed: ContributorRedeemed[] = [];
+        queryResult.forEach((record) => {
+          const {
+            bountyName: bountyName,
+            gitHub: gitHub,
+            contributions: contributionsJSON,
+            unsignedTx: unsignedTx,
+            txHash: txHash,
+            outputIndex: outputIndex,
+          } = record[0];
 
-        const contributions = JSON.parse(contributionsJSON);
+          const contributions: Map<string, number> = new Map(
+            JSON.parse(contributionsJSON)
+          );
 
-        const contributorRedeemed: ContributorRedeemed = {
-          bountyName: bountyName,
-          gitHub: gitHub,
-          contributions: contributions,
-          unsignedTx: unsignedTx,
-          txHash: txHash,
-          outputIndex: outputIndex,
-        };
+          const contributorRedeemed: ContributorRedeemed = {
+            bountyName: bountyName,
+            gitHub: gitHub,
+            contributions: contributions,
+            unsignedTx: unsignedTx,
+            txHash: txHash,
+            outputIndex: outputIndex,
+          };
 
-        res.status(200).json({ contributorRedeemed });
+          contributorsRedeemed.push(contributorRedeemed);
+        });
+
+        res.status(200).json({ contributorsRedeemed });
       } else {
         res.status(404).json({ message: "Data not found" });
       }

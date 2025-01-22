@@ -17,11 +17,9 @@ export default async function handler(
       } = req.body;
       const sql = neon(process.env.DATABASE_URL!);
 
-      const contributionsJSON = JSON.stringify(contributions);
-
       await sql(
         "INSERT INTO unsigned_bounty (bountyName, gitHub, contributions, unsignedTx, txHash, outputIndex) VALUES ($1, $2, $3, $4, $5, $6);",
-        [bountyName, gitHub, contributionsJSON, unsignedTx, txHash, outputIndex]
+        [bountyName, gitHub, contributions, unsignedTx, txHash, outputIndex]
       );
 
       res.status(200).json({ message: "Data inserted successfully" });
