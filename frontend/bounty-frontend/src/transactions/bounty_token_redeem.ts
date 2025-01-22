@@ -1,23 +1,12 @@
-import { applyParamsToScript, OfflineEvaluator } from "@meshsdk/core-csl";
-import blueprint from "../../../../aiken-workspace/plutus.json";
+import { OfflineEvaluator } from "@meshsdk/core-csl";
 import {
   BlockfrostProvider,
   IWallet,
   MeshTxBuilder,
-  resolveScriptHash,
   stringToHex,
-  serializePlutusScript,
-  mTuple,
-  mConStr1,
-  deserializeAddress,
-  ByteString,
   CIP68_100,
 } from "@meshsdk/core";
-import {
-  getMultiSigTxApiRoute,
-  getUtxoApiRoute,
-  insertRedeemMultiSigApiRoute,
-} from "../pages/common/api_common";
+import { getUtxoApiRoute } from "../pages/common/api_common";
 import { ApiMiddleware } from "@/middleware/api";
 import {
   getBountyBoardScriptCbor,
@@ -27,10 +16,17 @@ import {
   getIdSpendingScriptAddress,
   getIdSpendingScriptCbor,
 } from "./common";
+import {
+  actionBurn,
+  bountyBurn,
+  BountyBurn,
+  contributorDatum,
+  ContributorDatum,
+} from "./types";
+import { BountyWithName } from "@/services/type";
 
 export const burnBountyToken = async (
-  bounty_name: string,
-  reward: number,
+  bounty: BountyWithName,
   wallet: IWallet
 ) => {
   if (!wallet) {
@@ -73,45 +69,23 @@ export const burnBountyToken = async (
     const idNftTxResult = await api.getIdNftTx();
     const idRefTxResult = await api.getIdRefTx();
     const idInfoResult = await api.getIdInfo();
-    const ownerIdInfoResult = await api.getOwnerIdInfo(bounty_name);
+    const ownerIdInfoResult = await api.getOwnerIdInfo(bounty.name);
     const oracleResult = await getUtxoApiRoute(
       process.env.NEXT_PUBLIC_ORACLE_NFT_ASSET_NAME!
     );
-    const bountyResult = await getMultiSigTxApiRoute(bounty_name);
 
-    const contributions: Contribution[] = idInfoResult.contributions;
-    contributions.push({ all_signatories: pubKeyHashes, reward: reward });
+    const contributions: Map<string, number> = idInfoResult.contributions;
 
-    const contributionDatums: ContributionDatum[] = [];
-    contributions.forEach((item) => {
-      const pubKeyHashesByteString: ByteString[] = item.all_signatories.map(
-        (item) => ({ bytes: item })
-      );
-      const contributionDatum: ContributionDatum = {
-        constructor: 0,
-        fields: [
-          {
-            list: pubKeyHashesByteString,
-          },
-          {
-            int: item.reward,
-          },
-        ],
-      };
-      contributionDatums.push(contributionDatum);
-    });
+    contributions.set(bounty.name, bounty.reward);
 
-    const contributerDatumn: ContributerDatum = {
-      constructor: 0,
-      fields: [
-        {
-          bytes: stringToHex(idInfoResult.gitHub),
-        },
-        {
-          list: contributionDatums,
-        },
-      ],
-    };
+    const updateIdContributorDatum: ContributorDatum = contributorDatum(
+      idInfoResult.contributor.metadata,
+      idInfoResult.contributor.version,
+      contributions,
+      idInfoResult.contributor.pub_key_hash
+    );
+
+    const bountyRedeemer: BountyBurn = bountyBurn(idNftTxResult.tokenName);
     const unsignedTx = await txBuilder
       .readOnlyTxInReference(
         oracleResult.oracleTxHash,
@@ -123,16 +97,17 @@ export const burnBountyToken = async (
       )
       .txIn(idNftTxResult.txHash, idNftTxResult.index)
       .txIn(idRefTxResult.txHash, idRefTxResult.index)
+      .txInRedeemerValue("", "JSON")
       .txInScript(idSpendingScriptCbor)
       .txInInlineDatumPresent()
-      .txIn(bountyResult.txHash, bountyResult.outputIndex)
-      .txInRedeemerValue(mConStr1([]))
+      .txIn(bounty.txHash, bounty.outputIndex)
+      .txInRedeemerValue(bountyRedeemer, "JSON")
       .txInScript(bountyBoardScriptCbor)
       .txInInlineDatumPresent()
       .mintPlutusScriptV3()
-      .mint("-1", bountyMintingPolicyId, stringToHex(bounty_name))
+      .mint("-1", bountyMintingPolicyId, stringToHex(bounty.name))
       .mintingScript(bountyMintingScriptCbor)
-      .mintRedeemerValue(mConStr1([]))
+      .mintRedeemerValue(actionBurn, "JSON")
       .txOut(idSpendingScriptAddress, [
         {
           unit:
@@ -140,7 +115,7 @@ export const burnBountyToken = async (
           quantity: "1",
         },
       ])
-      .txOutInlineDatumValue(contributerDatumn, "JSON")
+      .txOutInlineDatumValue(updateIdContributorDatum, "JSON")
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,
@@ -154,12 +129,12 @@ export const burnBountyToken = async (
 
     const signedTx = await wallet.signTx(unsignedTx, true);
 
-    await insertRedeemMultiSigApiRoute(
-      bounty_name,
-      signedTx,
-      all_signatories,
-      idInfoResult.gitHub
-    );
+    // await insertRedeemMultiSigApiRoute(
+    //   bounty_name,
+    //   signedTx,
+    //   all_signatories,
+    //   idInfoResult.gitHub
+    // );
 
     console.log(txHash);
   } catch (e) {

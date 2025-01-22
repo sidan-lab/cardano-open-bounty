@@ -23,4 +23,6 @@ export type BountyWithName = {
   name: string;
   issue_url: string;
   reward: number;
+  txHash: string;
+  outputIndex: number;
 };

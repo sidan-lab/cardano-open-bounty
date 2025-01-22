@@ -64,7 +64,7 @@ const CreateBountyToken: React.FC = () => {
       // required_signatories: newBounty.required_signatories,
     });
     try {
-      await mintBountyToken(newBounty.tasks, newBounty.reward, wallet);
+      await mintBountyToken(newBounty.tasks, Number(newBounty.reward), wallet);
       console.log("Minted Bounty Token with issue URL:", newBounty.tasks);
 
       setNewBounty({

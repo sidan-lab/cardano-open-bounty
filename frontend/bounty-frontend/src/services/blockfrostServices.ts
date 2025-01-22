@@ -127,15 +127,15 @@ export class BlockfrostService {
 
       const bounties: BountyWithName[] = [];
 
-      addressUtxos.forEach((uxto) => {
-        if (uxto.inline_datum) {
+      addressUtxos.forEach((utxo) => {
+        if (utxo.inline_datum) {
           const name = getAssetNameByPolicyId(
-            uxto.amount,
+            utxo.amount,
             this.bountyMintingPolicyId
           );
 
           if (name) {
-            const datum: BountyDatum = deserializeDatum(uxto.inline_datum);
+            const datum: BountyDatum = deserializeDatum(utxo.inline_datum);
 
             const bounty: Bounty = convertBountyDatum(datum);
 
@@ -143,6 +143,8 @@ export class BlockfrostService {
               name: hexToString(name),
               issue_url: bounty.issue_url,
               reward: bounty.reward,
+              txHash: utxo.tx_hash,
+              outputIndex: utxo.output_index,
             };
             bounties.push(bountyWithName);
           }
@@ -168,15 +170,15 @@ export class BlockfrostService {
 
       const bounties: BountyWithName[] = [];
 
-      addressUtxos.forEach((uxto) => {
-        if (uxto.inline_datum) {
+      addressUtxos.forEach((utxo) => {
+        if (utxo.inline_datum) {
           const name = getAssetNameByPolicyId(
-            uxto.amount,
+            utxo.amount,
             this.bountyMintingPolicyId
           );
 
           if (name) {
-            const datum: BountyDatum = deserializeDatum(uxto.inline_datum);
+            const datum: BountyDatum = deserializeDatum(utxo.inline_datum);
 
             const bounty: Bounty = convertBountyDatum(datum);
 
@@ -184,6 +186,8 @@ export class BlockfrostService {
               name: name,
               issue_url: bounty.issue_url,
               reward: bounty.reward,
+              txHash: utxo.tx_hash,
+              outputIndex: utxo.output_index,
             };
             bounties.push(bountyWithName);
           }

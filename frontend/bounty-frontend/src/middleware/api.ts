@@ -1,7 +1,7 @@
 import { CIP68_100, hexToString, IWallet, stringToHex } from "@meshsdk/core";
 import { UserWalletService } from "@/services/walletServices";
 import { BlockfrostService } from "@/services/blockfrostServices";
-import { GitHub } from "@/transactions/types";
+import { Contributor, GitHub } from "@/transactions/types";
 import { BountyWithName } from "@/services/type";
 import {
   getBountyBoardScriptAddress,
@@ -101,6 +101,7 @@ export class ApiMiddleware {
     tokenName: string;
     gitHub: string;
     contributions: Map<string, number>;
+    contributor: Contributor;
     tx_hash: string;
     outputIndex: number;
   }> => {
@@ -118,7 +119,14 @@ export class ApiMiddleware {
       const gitHub: string = contributor.metadata.get(GitHub)!;
 
       const contributions: Map<string, number> = contributor.contributions;
-      return { tx_hash, outputIndex, tokenName, gitHub, contributions };
+      return {
+        tx_hash,
+        outputIndex,
+        tokenName,
+        gitHub,
+        contributions,
+        contributor,
+      };
     } catch (error) {
       console.error("Error getting id info :", error);
       throw error;

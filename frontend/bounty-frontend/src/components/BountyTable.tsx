@@ -172,7 +172,7 @@ const BountyTable: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-white">{`${bounty.reward} ADA`}</td>
                     <td className="px-8 py-4 flex justify-center space-x-4">
-                      <Sign />
+                      <Sign bounty={bounty} wallet={wallet} />
                     </td>
                   </tr>
                 ))
