@@ -1,9 +1,11 @@
+import { getUnsignedBountyApiRoute } from "@/pages/common/api_common";
 import { ContributorRedeemed } from "@/pages/common/type";
 import { BountyWithName } from "@/services/type";
 import { signBountyToken } from "@/transactions/sign_bounty";
 import { IWallet } from "@meshsdk/core";
-import React, { useState } from "react";
-type HandleSignFunction = (txHash: string, wallet: IWallet) => void;
+import React, { useEffect, useState } from "react";
+
+type HandleSignFunction = (unsignedTx: string, wallet: IWallet) => void;
 
 const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
   bounty,
@@ -56,6 +58,18 @@ const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
     },
   ];
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const contributorsRedeemed: ContributorRedeemed[] =
+        await getUnsignedBountyApiRoute(bounty.txHash, bounty.outputIndex);
+    };
+    try {
+      fetchData();
+    } catch (error) {
+      console.error("Error getting unsigned bounty token:", error);
+    }
+  }, []);
+
   const [showModal, setShowModal] = useState<boolean>(false);
   const [currentContributors] = useState<typeof contributors>(contributors);
   // const [currentRequiredSigners, setCurrentRequiredSigners] = useState<
@@ -77,7 +91,10 @@ const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
     setShowModal(false);
   };
 
-  const handleSign: HandleSignFunction = async (unsignedTx: string) => {
+  const handleSign: HandleSignFunction = async (
+    unsignedTx: string,
+    wallet: IWallet
+  ) => {
     try {
       await signBountyToken(unsignedTx, wallet);
       setShowModal(false);
@@ -159,7 +176,7 @@ function renderContributors(
   contributors: ContributorRedeemed[],
   wallet: IWallet,
   handleSignClick: (
-    txHash: string,
+    unsignedTx: string,
     wallet: IWallet
   ) => React.MouseEventHandler<HTMLButtonElement>
 ) {
