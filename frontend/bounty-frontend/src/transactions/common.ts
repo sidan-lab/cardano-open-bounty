@@ -105,11 +105,37 @@ export const getBountyBoardScriptAddress = () =>
 export const getIdSpendingScriptHash = () =>
   resolveScriptHash(getIdSpendingScriptCbor(), "V3");
 
+export const getIdMintingScriptHash = () =>
+  resolveScriptHash(getIdMintingScriptCbor(), "V3");
+
 export const getBountyBoardScriptHash = () =>
   resolveScriptHash(getBountyBoardScriptCbor(), "V3");
+
+export const getBountyMintingScriptHash = () =>
+  resolveScriptHash(getBountyMintingScriptCbor(), "V3");
 
 export const getIdMintingPolicyId = () =>
   resolveScriptHash(getIdMintingScriptCbor(), "V3");
 
 export const getBountyMintingPolicyId = () =>
   resolveScriptHash(getBountyMintingScriptCbor(), "V3");
+
+export const getIdMintingRefScriptTx = (): [string, number] => [
+  process.env.NEXT_PUBLIC_REF_SCRIPT_ID_TX!,
+  0,
+];
+
+export const getIdSpendingRefScriptTx = (): [string, number] => [
+  process.env.NEXT_PUBLIC_REF_SCRIPT_ID_TX!,
+  1,
+];
+
+export const getBountyMintingRefScriptTx = (): [string, number] => [
+  process.env.NEXT_PUBLIC_REF_SCRIPT_BOUNTY_TX!,
+  0,
+];
+
+export const getBountySpendingRefScriptTx = (): [string, number] => [
+  process.env.NEXT_PUBLIC_REF_SCRIPT_BOUNTY_TX!,
+  1,
+];

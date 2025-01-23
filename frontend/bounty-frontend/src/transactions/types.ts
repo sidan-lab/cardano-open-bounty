@@ -155,7 +155,7 @@ export const actionStop: ActionStop = conStr1([]);
 export const GitHub: string = "GitHub";
 
 export const bountyBurn = (contributor_asset_name: string): BountyBurn =>
-  conStr1([{ bytes: contributor_asset_name }]);
+  conStr1([byteString(stringToHex(contributor_asset_name))]);
 
 export function convertOracleNFTDatum(datum: OracleNFTDatum): OracleNFT {
   const bounty_token_policy_id: string = datum.fields[0].bytes;

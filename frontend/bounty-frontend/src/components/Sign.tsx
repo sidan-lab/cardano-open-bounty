@@ -60,8 +60,8 @@ const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
 
   useEffect(() => {
     const fetchData = async () => {
-      const contributorsRedeemed: ContributorRedeemed[] =
-        await getUnsignedBountyApiRoute(bounty.txHash, bounty.outputIndex);
+      // const contributorsRedeemed: ContributorRedeemed[] =
+      //   await getUnsignedBountyApiRoute(bounty.txHash, bounty.outputIndex);
     };
     try {
       fetchData();

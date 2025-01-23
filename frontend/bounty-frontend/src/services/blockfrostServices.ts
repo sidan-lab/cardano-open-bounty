@@ -63,14 +63,14 @@ export class BlockfrostService {
       const txHash = assetTransactions[assetTransactions.length - 1].tx_hash;
 
       const utxo = await this.blockFrost.fetchUTxOs(txHash);
-      const asset: Asset = {
+      const assetWithQuant: Asset = {
         unit: policyId + assetName,
         quantity: "1",
       };
 
-      const index = getOutputIndexByAsset(utxo, asset);
+      const index = getOutputIndexByAsset(utxo, assetWithQuant);
 
-      if (!index) {
+      if (index == null) {
         throw new Error("Error getIdTokenTxHash cannot find outputIndex");
       }
       return { txHash, index };
@@ -108,7 +108,7 @@ export class BlockfrostService {
         asset
       );
 
-      if (!outputIndex || !contributor) {
+      if (outputIndex == null || contributor == null) {
         throw new Error("Error getIdTokenTxHash cannot find outputIndex");
       }
 

@@ -31,7 +31,7 @@ export function getOutputIndexByAsset(
     for (const amount of utxo.output.amount) {
       if (
         amount.unit === asset.unit &&
-        amount.quantity === asset.quantity.toString()
+        amount.quantity.toString() === asset.quantity.toString()
       ) {
         return utxo.input.outputIndex;
       }
@@ -48,7 +48,7 @@ export function getOutputIndexAndDatumByAsset(
     for (const amount of utxo.output.amount) {
       if (
         amount.unit === asset.unit &&
-        amount.quantity === asset.quantity.toString()
+        amount.quantity.toString() === asset.quantity.toString()
       ) {
         const plutusData = utxo.output.plutusData!;
         const datum: ContributorDatum = deserializeDatum(plutusData);

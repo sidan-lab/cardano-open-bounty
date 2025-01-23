@@ -29,7 +29,7 @@ const CreateIDToken: React.FC = () => {
     e.preventDefault();
 
     try {
-      await mintIdToken(github, idTokenName, wallet);
+      await mintIdToken(idTokenName, github, wallet);
       console.log("Minted ID Token with GitHub URL:", github);
 
       setGithub("");

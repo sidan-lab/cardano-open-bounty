@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { BountyWithName } from "@/services/type";
+import { redeemBountyToken } from "@/transactions/bounty_token_redeem";
+import { IWallet } from "@meshsdk/core";
 
 interface ContributeProps {
   bounty: BountyWithName;
+  wallet: IWallet;
   // bounty: {
   //   name: string;
   //   tasks: string;
@@ -11,7 +14,7 @@ interface ContributeProps {
   // };
 }
 
-const Contribute: React.FC<ContributeProps> = ({ bounty }) => {
+const Contribute: React.FC<ContributeProps> = ({ bounty, wallet }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleContributeClick = () => {
@@ -22,10 +25,16 @@ const Contribute: React.FC<ContributeProps> = ({ bounty }) => {
     setIsModalOpen(false);
   };
 
-  const handleConfirm = () => {
-    // logic here
-    console.log(`User signed to contribute to ${bounty.name}`);
-    setIsModalOpen(false);
+  const handleConfirm = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      await redeemBountyToken(bounty, wallet);
+
+      console.log(`User signed to contribute to ${bounty.name}`);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error minting bounty token:", error);
+    }
   };
 
   return (

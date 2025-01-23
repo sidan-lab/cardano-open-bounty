@@ -1,10 +1,5 @@
 import { OfflineEvaluator } from "@meshsdk/core-csl";
-import {
-  BlockfrostProvider,
-  IWallet,
-  MeshTxBuilder,
-  deserializeAddress,
-} from "@meshsdk/core";
+import { BlockfrostProvider, IWallet, MeshTxBuilder } from "@meshsdk/core";
 
 import {
   getBountyBoardScriptCbor,
@@ -13,7 +8,7 @@ import {
   getIdSpendingScriptCbor,
 } from "./common";
 
-export const outputTxRefScrippt = async (wallet: IWallet) => {
+export const outputTxRefScript = async (wallet: IWallet) => {
   if (!wallet) {
     alert("Please connect your wallet");
     return;
@@ -36,9 +31,6 @@ export const outputTxRefScrippt = async (wallet: IWallet) => {
 
   const changeAddress = await wallet.getChangeAddress();
   const utxos = await wallet.getUtxos();
-  const collateral = (await wallet.getCollateral())[0];
-  const usedAddress = (await wallet.getUsedAddresses())[0];
-  const { pubKeyHash } = deserializeAddress(usedAddress);
 
   const idMintingScriptCbor = getIdMintingScriptCbor();
   const idSpendingScriptCbor = getIdSpendingScriptCbor();
@@ -46,8 +38,8 @@ export const outputTxRefScrippt = async (wallet: IWallet) => {
   const bountyMintingScriptCbor = getBountyMintingScriptCbor();
   const bountySpendingScriptCbor = getBountyBoardScriptCbor();
 
-  const scriptAddress = "";
-
+  const scriptAddress =
+    "addr_test1qqyxeduckrmffn26gjffda77nfu560xctycf00jcnr74p7vdx9gcw644ygkqgqcfm5nlrecqv0rzp0qcyw55q3lxcpkq093wet";
   try {
     const unsignedTxId = await txBuilder
       .txOut(scriptAddress, [])

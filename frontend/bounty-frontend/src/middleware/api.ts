@@ -84,7 +84,7 @@ export class ApiMiddleware {
     try {
       const { policyId, assetName } = await this.wallet.getIdToken();
 
-      const refAssetName = CIP68_100(assetName.slice(3));
+      const refAssetName = CIP68_100(assetName.slice(8));
       const { txHash, index } = await this.blockFrost.getIdRefTxAndDatum(
         policyId,
         refAssetName

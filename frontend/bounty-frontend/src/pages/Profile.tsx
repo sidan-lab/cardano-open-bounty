@@ -47,15 +47,19 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const getWalletBalance = async () => {
       const api = new ApiMiddleware(wallet);
-      const { tokenName, gitHub, contributions } = await api.getIdInfo();
+      const hasId = await api.findIdtoken();
 
-      const balance = await wallet.getLovelace();
-      setUserBalance(balance);
+      if (hasId.hasIdToken) {
+        const { tokenName, gitHub, contributions } = await api.getIdInfo();
 
-      // Simulating fetching user token and contributions
-      setUserToken(tokenName);
-      setUserContributions(3);
-      setUserGithubUrl(gitHub);
+        const balance = await wallet.getLovelace();
+        setUserBalance(balance);
+
+        // Simulating fetching user token and contributions
+        setUserToken(tokenName);
+        setUserContributions(3);
+        setUserGithubUrl(gitHub);
+      }
     };
 
     if (connected) {
