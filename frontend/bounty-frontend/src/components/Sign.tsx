@@ -11,73 +11,77 @@ const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
   bounty,
   wallet,
 }) => {
-  const contributors: ContributorRedeemed[] = [
-    {
-      bountyName: "Alice",
-      gitHub: "https://github.com/alice/",
-      contributions: new Map([
-        ["mesh", 100],
-        ["sidan", 200],
-      ]),
-      unsignedTx: "0xa",
-      txHash: "0xa",
-      outputIndex: 0,
-    },
-    {
-      bountyName: "Bob",
-      gitHub: "https://github.com/bob/",
-      contributions: new Map([
-        ["mesh", 100],
-        ["sidan", 200],
-      ]),
-      unsignedTx: "0xa",
-      txHash: "0xa",
-      outputIndex: 0,
-    },
-    {
-      bountyName: "Bob",
-      gitHub: "https://github.com/bob/",
-      contributions: new Map([
-        ["mesh", 100],
-        ["sidan", 200],
-      ]),
-      unsignedTx: "0xa",
-      txHash: "0xa",
-      outputIndex: 0,
-    },
-    {
-      bountyName: "Bob",
-      gitHub: "https://github.com/bob/",
-      contributions: new Map([
-        ["mesh", 100],
-        ["sidan", 200],
-      ]),
-      unsignedTx: "0xa",
-      txHash: "0xa",
-      outputIndex: 0,
-    },
-  ];
+  // const contributors: ContributorRedeemed[] = [
+  //   {
+  //     bountyName: "Alice",
+  //     gitHub: "https://github.com/alice/",
+  //     contributions: new Map([
+  //       ["mesh", 100],
+  //       ["sidan", 200],
+  //     ]),
+  //     unsignedTx: "0xa",
+  //     txHash: "0xa",
+  //     outputIndex: 0,
+  //   },
+  //   {
+  //     bountyName: "Bob",
+  //     gitHub: "https://github.com/bob/",
+  //     contributions: new Map([
+  //       ["mesh", 100],
+  //       ["sidan", 200],
+  //     ]),
+  //     unsignedTx: "0xa",
+  //     txHash: "0xa",
+  //     outputIndex: 0,
+  //   },
+  //   {
+  //     bountyName: "Bob",
+  //     gitHub: "https://github.com/bob/",
+  //     contributions: new Map([
+  //       ["mesh", 100],
+  //       ["sidan", 200],
+  //     ]),
+  //     unsignedTx: "0xa",
+  //     txHash: "0xa",
+  //     outputIndex: 0,
+  //   },
+  //   {
+  //     bountyName: "Bob",
+  //     gitHub: "https://github.com/bob/",
+  //     contributions: new Map([
+  //       ["mesh", 100],
+  //       ["sidan", 200],
+  //     ]),
+  //     unsignedTx: "0xa",
+  //     txHash: "0xa",
+  //     outputIndex: 0,
+  //   },
+  // ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      // const contributorsRedeemed: ContributorRedeemed[] =
-      //   await getUnsignedBountyApiRoute(bounty.txHash, bounty.outputIndex);
-    };
-    try {
-      fetchData();
-    } catch (error) {
-      console.error("Error getting unsigned bounty token:", error);
-    }
-  }, []);
+  const [contributorsRedeemed, setContributorsRedeemed] = useState<
+    ContributorRedeemed[]
+  >([]);
+
+  useEffect(() => {}, []);
 
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [currentContributors] = useState<typeof contributors>(contributors);
   // const [currentRequiredSigners, setCurrentRequiredSigners] = useState<
   //   string[]
   // >(bounty.required_signatories);
 
   const handleSignShowClick = () => {
-    setShowModal(true);
+    const fetchData = async () => {
+      const contributorsRedeemed: ContributorRedeemed[] =
+        await getUnsignedBountyApiRoute(bounty.txHash, bounty.outputIndex);
+
+      setContributorsRedeemed(contributorsRedeemed);
+    };
+    try {
+      fetchData();
+      setShowModal(true);
+    } catch (error) {
+      console.error("Error getting unsigned bounty token:", error);
+    }
   };
 
   const handleSignClick = (unsignedTx: string, wallet: IWallet) => {
@@ -128,9 +132,9 @@ const Sign: React.FC<{ bounty: BountyWithName; wallet: IWallet }> = ({
                   Contributors who want to Redeem:
                 </h5>
                 <ul className="mb-4 max-h-40 overflow-y-auto">
-                  {currentContributors.length > 0 ? (
+                  {contributorsRedeemed.length > 0 ? (
                     renderContributors(
-                      currentContributors,
+                      contributorsRedeemed,
                       wallet,
                       handleSignClick
                     )

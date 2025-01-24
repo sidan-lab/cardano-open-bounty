@@ -270,6 +270,38 @@ export const getUnsignedBountyApiRoute = async (
     }),
     config
   );
-  const { contributorRedeemed } = res.data;
-  return contributorRedeemed;
+
+  const contributorsRedeemed: ContributorRedeemed[] = [];
+  const { queryResult } = res.data as {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    queryResult: Record<string, any>[];
+  };
+
+  queryResult.forEach((record) => {
+    const {
+      bountyname: bountyName,
+      github: gitHub,
+      contributions: contributionsJSON,
+      unsignedtx: unsignedTx,
+      txhash: txHash,
+      outputindex: outputIndex,
+    } = record;
+
+    const contributions: Map<string, number> = new Map(
+      JSON.parse(contributionsJSON)
+    );
+
+    const contributorRedeemed: ContributorRedeemed = {
+      bountyName: bountyName,
+      gitHub: gitHub,
+      contributions: contributions,
+      unsignedTx: unsignedTx,
+      txHash: txHash,
+      outputIndex: outputIndex,
+    };
+
+    contributorsRedeemed.push(contributorRedeemed);
+  });
+
+  return contributorsRedeemed;
 };

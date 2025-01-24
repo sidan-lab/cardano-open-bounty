@@ -62,7 +62,10 @@ export const mintIdToken = async (
   const changeAddress = await wallet.getChangeAddress();
   const utxos = await wallet.getUtxos();
   const collateral = (await wallet.getCollateral())[0];
-  const usedAddress = (await wallet.getUsedAddresses())[0];
+  const usedAddress =
+    (await wallet.getUsedAddresses()).length === 0
+      ? (await wallet.getUnusedAddresses())[0]
+      : (await wallet.getUsedAddresses())[0];
   const { pubKeyHash } = deserializeAddress(usedAddress);
 
   const idOracleCounterSpendingScriptCbor =

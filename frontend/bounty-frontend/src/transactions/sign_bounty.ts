@@ -1,6 +1,6 @@
 import { IWallet } from "@meshsdk/core";
 import {
-  deleteMultiSigApiRoute,
+  // deleteMultiSigApiRoute,
   deleteUnsignedBountyApiRoute,
 } from "../pages/common/api_common";
 
@@ -39,6 +39,7 @@ export const signBountyToken = async (unsignedTx: string, wallet: IWallet) => {
     await wallet.submitTx(signedTx);
 
     await deleteUnsignedBountyApiRoute(unsignedTx);
+    console.log(signedTx);
   } catch (e) {
     console.error(e);
   }
