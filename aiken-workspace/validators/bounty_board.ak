@@ -112,6 +112,8 @@ fn mock_spend_tx(test_case: SpendTestCase) -> Transaction {
           bounty_board_address: from_script("bounty_board_hold"),
           id_token_policy_id: mock_policy_id(1),
           id_token_store_address: from_script("ref_token_hold"),
+          intent_token_policy_id: mock_policy_id(2),
+          intent_token_store_address: from_script("intent_token_hold"),
           owner: mock_pub_key_address(0, None),
         },
       )

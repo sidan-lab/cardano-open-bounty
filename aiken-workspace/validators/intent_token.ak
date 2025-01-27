@@ -1,12 +1,19 @@
 use aiken/primitive/bytearray.{concat}
-use cardano/address.{from_script}
+use cardano/address.{VerificationKey, from_script}
 use cardano/assets.{AssetName, PolicyId, from_asset, quantity_of}
 use cardano/transaction.{InlineDatum, Transaction} as tx
 use cip.{cip68_100, cip68_222}
-use cocktail.{convert_int_to_bytes, outputs_at_with}
+use cocktail.{
+  convert_int_to_bytes, inputs_at_with, outputs_at_with, value_policy_info,
+  value_tokens,
+}
 use cocktail/vodka_extra_signatories.{key_signed}
 use identity_token_type.{
   CheckBurn, CheckMint, ContributerDatum, IdRedeemr, to_contributer_datum,
+}
+use identity_token_util.{is_token_provided}
+use intent_token_type.{
+  AccpetRedeem, CancelRedeem, IntentRedeemr, RedeemBounty, to_intent_datum,
 }
 use mocktail.{
   add_output, complete, mint, mock_policy_id, mock_pub_key_address,
@@ -16,11 +23,8 @@ use mocktail.{
 use oracle_token_type.{OracleCounterDatum, OracleDatum}
 use oracle_token_util.{get_oracle_counter_datum, get_oracle_nft_datum}
 
-validator identity_token(
-  oracle_nft: (PolicyId, AssetName),
-  oracle_counter: PolicyId,
-) {
-  mint(redeemer: IdRedeemr, policy_id: PolicyId, transaction: Transaction) {
+validator intent_token(oracle_nft: (PolicyId, AssetName)) {
+  mint(redeemer: IntentRedeemr, policy_id: PolicyId, transaction: Transaction) {
     let Transaction {
       mint,
       outputs,
@@ -33,46 +37,68 @@ validator identity_token(
     let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
 
-    let oracle_counter_datum: OracleCounterDatum =
-      inputs |> get_oracle_counter_datum(oracle_counter)
-
-    let counter_bytes = convert_int_to_bytes(oracle_counter_datum.count)
-
-    let ref_token_name =
-      cip.cip68_100(redeemer.token_name)
-        |> concat(counter_bytes)
-    let ref_token_qty =
-      mint
-        |> quantity_of(policy_id, ref_token_name)
-
-    let nft_token_name =
-      cip.cip68_222(redeemer.token_name)
-        |> concat(counter_bytes)
-    let nft_token_qty =
-      mint
-        |> quantity_of(policy_id, nft_token_name)
-
-    when redeemer.action is {
-      CheckMint -> {
-        let are_tokens_nfts = ref_token_qty == 1 && nft_token_qty == 1
-        expect [ref_output] =
+    when redeemer is {
+      RedeemBounty(contributor_address) -> {
+        expect [(only_mint_policy_id, only_mint_asset_name, only_mint_quantity)] =
+          value_tokens(mint)
+        let is_id_token_provided =
+          is_token_provided(
+            inputs,
+            oracle_input_datum.id_token_policy_id,
+            cip68_222(only_mint_asset_name),
+          )
+        expect [bounty_input] =
+          inputs_at_with(
+            inputs,
+            oracle_input_datum.bounty_board_address,
+            oracle_input_datum.bounty_token_policy_id,
+            only_mint_asset_name,
+          )
+        expect [intent_output] =
           outputs_at_with(
             outputs,
-            oracle_input_datum.id_token_store_address,
-            policy_id,
-            ref_token_name,
+            oracle_input_datum.intent_token_store_address,
+            only_mint_policy_id,
+            only_mint_asset_name,
           )
 
-        let datum = ref_output.datum |> to_contributer_datum()
+        let datum = intent_output.datum |> to_intent_datum()
+
         let datum_check =
-          datum.contributions == [] && key_signed(
-            extra_signatories,
-            datum.pub_key_hash,
-          )
+          (datum.bounty_utxo == bounty_input.output_reference)? && (datum.contributor_address == contributor_address)?
 
-        are_tokens_nfts? && datum_check?
+        datum_check?
       }
-      CheckBurn -> (ref_token_qty == -1)? && (nft_token_qty == -1)?
+      AccpetRedeem -> {
+        expect Some((_, _, bounty_mint_quantity)) =
+          value_policy_info(mint, oracle_input_datum.bounty_token_policy_id)
+
+        expect Some((_, _, intent_mint_quantity)) =
+          value_policy_info(mint, oracle_input_datum.intent_token_policy_id)
+
+        let is_burnt_check =
+          (intent_mint_quantity == -1)? && (bounty_mint_quantity == -1)?
+        is_burnt_check?
+      }
+      CancelRedeem -> {
+        expect [(only_mint_policy_id, only_mint_asset_name, only_mint_quantity)] =
+          value_tokens(mint)
+        expect [intent_input] =
+          inputs_at_with(
+            inputs,
+            oracle_input_datum.intent_token_store_address,
+            only_mint_policy_id,
+            only_mint_asset_name,
+          )
+        let intent_datum = intent_input.output.datum |> to_intent_datum()
+
+        expect VerificationKey(contributor_pub_key_address) =
+          intent_datum.contributor_address.payment_credential
+        let sign_check =
+          key_signed(extra_signatories, contributor_pub_key_address)
+
+        sign_check? && (only_mint_quantity == -1)?
+      }
     }
   }
 

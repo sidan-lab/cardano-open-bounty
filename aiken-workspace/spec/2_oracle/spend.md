@@ -15,7 +15,7 @@ pub type OracleDatum {
   id_token_policy_id: PolicyId,
   id_token_store_address: Address,
   intent_token_policy_id: PolicyId,
-  intent_token_store_address: Address
+  intent_token_store_address: Address,
   owner: Address
 }
 

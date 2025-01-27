@@ -4,7 +4,8 @@ use cardano/assets.{AssetName, PolicyId, from_asset}
 use cardano/transaction.{OutputReference, Transaction, find_input} as tx
 use cip.{cip68_100, cip68_222}
 use cocktail.{
-  convert_int_to_bytes, inputs_with, inputs_with_policy, value_tokens,
+  convert_int_to_bytes, inputs_with, inputs_with_policy, value_policy_info,
+  value_tokens,
 }
 use identity_token_type.{ContributerDatum}
 use mocktail.{
@@ -15,37 +16,24 @@ use mocktail.{
 use oracle_token_type.{OracleDatum}
 use oracle_token_util.{get_oracle_nft_datum}
 
-validator id_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
+validator intent_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
   spend(_datum, _redeemer, input: OutputReference, transaction: Transaction) {
     let Transaction { inputs, reference_inputs, mint, .. } = transaction
 
-    let OracleDatum { bounty_token_policy_id, .. }: OracleDatum =
+    let oracle_input_datum: OracleDatum =
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
 
     expect Some(own_input) = find_input(inputs, input)
-    expect [(policy_id, ref_asset_name, _)] =
-      value_tokens(own_input.output.value)
+    expect [(intent_policy_id, _, _)] = value_tokens(own_input.output.value)
 
-    // Get NFT AssetName
-    let nft_asset_name = ref_asset_name |> bytearray.drop(4) |> cip68_222()
+    expect [(only_burn_policy, _, only_burn_quantity)] = value_tokens(mint)
+    let is_intent_completed =
+      only_burn_policy == intent_policy_id && only_burn_quantity == -1
 
-    when
-      (
-        inputs_with_policy(inputs, bounty_token_policy_id),
-        inputs_with(inputs, policy_id, nft_asset_name),
-      )
-    is {
-      ([_], [_]) -> {
-        let is_ref_token_name_correct =
-          ref_asset_name |> bytearray.starts_with(prefix: cip.cip68_100_prefix)
-        expect [(only_burn_policy, _, only_burn_quantity)] = value_tokens(mint)
-        let is_bounty_completed =
-          only_burn_policy == bounty_token_policy_id && only_burn_quantity == -1
-        is_ref_token_name_correct? && is_bounty_completed?
-      }
-      _ -> False
-    }
+    is_intent_completed?
   }
+
+  //todo: 
 
   else(_) {
     fail

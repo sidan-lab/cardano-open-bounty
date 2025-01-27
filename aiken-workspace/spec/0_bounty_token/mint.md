@@ -26,6 +26,7 @@ pub type BountyDatum {
 
    - input contains intent token, bounty token, contributor id ref token
    - ref input contains bounty owner id token
+   - require bounty owner sign
    - check if bounty owner id token name and bounty token name match
    - check if intent token name and contributor id ref token name match
    - check if intent datum utxo and bounty token utxo match

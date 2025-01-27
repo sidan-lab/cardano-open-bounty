@@ -15,9 +15,8 @@
 
    - Exactly 1 token minted
    - Asset Name must be id token asset name
-   - Signed by contributor
    - Output to intent holder with datum {UTXO}
-   - Datum stores UTXO of bounty token
+   - Datum stores UTXO of bounty token and contributor address
 
 2. Accept intent - Redeemer `AccpetRedeem`
 

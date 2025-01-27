@@ -19,5 +19,4 @@ pub type ContributerDatum {
 1. Update contributor
 
    - Output to id ref to ref holder
-   - intent name matchs with id ref name
    - intent and bounty token are burnt
