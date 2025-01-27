@@ -6,15 +6,24 @@ import {
   stringToHex,
   CIP68_100,
 } from "@meshsdk/core";
-import { getUtxoApiRoute } from "../pages/common/api_common";
+import {
+  getUtxoApiRoute,
+  insertUnsignedBountyApiRoute,
+} from "../pages/common/api_common";
 import { ApiMiddleware } from "@/middleware/api";
 import {
   getBountyBoardScriptCbor,
+  getBountyBoardScriptHash,
   getBountyMintingPolicyId,
+  getBountyMintingRefScriptTx,
   getBountyMintingScriptCbor,
+  getBountyMintingScriptHash,
+  getBountySpendingRefScriptTx,
   getIdMintingPolicyId,
+  getIdSpendingRefScriptTx,
   getIdSpendingScriptAddress,
   getIdSpendingScriptCbor,
+  getIdSpendingScriptHash,
 } from "./common";
 import {
   actionBurn,
@@ -25,7 +34,7 @@ import {
 } from "./types";
 import { BountyWithName } from "@/services/type";
 
-export const burnBountyToken = async (
+export const redeemBountyToken = async (
   bounty: BountyWithName,
   wallet: IWallet
 ) => {
@@ -59,10 +68,20 @@ export const burnBountyToken = async (
   const idMintingPolicyId = getIdMintingPolicyId();
   const idSpendingScriptCbor = getIdSpendingScriptCbor();
   const idSpendingScriptAddress = getIdSpendingScriptAddress();
+  const idSpendingScriptHash = getIdSpendingScriptHash();
 
-  const bountyBoardScriptCbor = getBountyBoardScriptCbor();
   const bountyMintingScriptCbor = getBountyMintingScriptCbor();
   const bountyMintingPolicyId = getBountyMintingPolicyId();
+  const bountyBoardScriptCbor = getBountyBoardScriptCbor();
+  const bountyBoardScriptHash = getBountyBoardScriptHash();
+  const bountyMintingScriptHash = getBountyMintingScriptHash();
+
+  const [idSpendingScriptTxHash, idSpendingScriptOutputIndex] =
+    getIdSpendingRefScriptTx();
+  const [bountyMintingScriptTxHash, bountyMintingScriptOutputIndex] =
+    getBountyMintingRefScriptTx();
+  const [bountySpendingScriptTxHash, bountySpendingScriptOutputIndex] =
+    getBountySpendingRefScriptTx();
 
   const api = new ApiMiddleware(wallet);
   try {
@@ -85,7 +104,7 @@ export const burnBountyToken = async (
       idInfoResult.contributor.pub_key_hash
     );
 
-    const bountyRedeemer: BountyBurn = bountyBurn(idNftTxResult.tokenName);
+    const bountyMintRedeemer: BountyBurn = bountyBurn(idNftTxResult.tokenName);
     const unsignedTx = await txBuilder
       .readOnlyTxInReference(
         oracleResult.oracleTxHash,
@@ -96,18 +115,36 @@ export const burnBountyToken = async (
         ownerIdInfoResult.outputIndex
       )
       .txIn(idNftTxResult.txHash, idNftTxResult.index)
+      .spendingPlutusScriptV3()
       .txIn(idRefTxResult.txHash, idRefTxResult.index)
-      .txInRedeemerValue("", "JSON")
+      .txInRedeemerValue("", "Mesh")
+      .spendingTxInReference(
+        idSpendingScriptTxHash,
+        idSpendingScriptOutputIndex,
+        (idSpendingScriptCbor.length / 2).toString(),
+        idSpendingScriptHash
+      )
       .txInScript(idSpendingScriptCbor)
       .txInInlineDatumPresent()
+      .spendingPlutusScriptV3()
       .txIn(bounty.txHash, bounty.outputIndex)
-      .txInRedeemerValue(bountyRedeemer, "JSON")
-      .txInScript(bountyBoardScriptCbor)
+      .txInRedeemerValue(actionBurn, "JSON")
+      .spendingTxInReference(
+        bountySpendingScriptTxHash,
+        bountySpendingScriptOutputIndex,
+        (bountyBoardScriptCbor.length / 2).toString(),
+        bountyBoardScriptHash
+      )
       .txInInlineDatumPresent()
       .mintPlutusScriptV3()
       .mint("-1", bountyMintingPolicyId, stringToHex(bounty.name))
-      .mintingScript(bountyMintingScriptCbor)
-      .mintRedeemerValue(actionBurn, "JSON")
+      .mintTxInReference(
+        bountyMintingScriptTxHash,
+        bountyMintingScriptOutputIndex,
+        (bountyMintingScriptCbor.length / 2).toString(),
+        bountyMintingScriptHash
+      )
+      .mintRedeemerValue(bountyMintRedeemer, "JSON")
       .txOut(idSpendingScriptAddress, [
         {
           unit:
@@ -129,14 +166,16 @@ export const burnBountyToken = async (
 
     const signedTx = await wallet.signTx(unsignedTx, true);
 
-    // await insertRedeemMultiSigApiRoute(
-    //   bounty_name,
-    //   signedTx,
-    //   all_signatories,
-    //   idInfoResult.gitHub
-    // );
+    await insertUnsignedBountyApiRoute(
+      bounty.name,
+      idInfoResult.gitHub,
+      idInfoResult.contributions,
+      signedTx,
+      bounty.txHash,
+      bounty.outputIndex
+    );
 
-    console.log(txHash);
+    console.log(signedTx);
   } catch (e) {
     console.error(e);
   }

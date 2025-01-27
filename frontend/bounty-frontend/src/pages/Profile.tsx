@@ -27,35 +27,31 @@ const Profile: React.FC = () => {
 
   const [, setUserBalance] = useState("");
   const [userToken, setUserToken] = useState<string | null>(null);
-  const [, setUserContributions] = useState<number>(0);
+  const [userContributions, setUserContributions] = useState<
+    Map<string, number>
+  >(new Map());
   const [userGithubUrl, setUserGithubUrl] = useState<string | null>(null);
 
   function classNames(...classes: unknown[]) {
     return classes.filter(Boolean).join(" ");
   }
-  const userBountyTokensContributed = [
-    { name: "Contributed Bounty Token 1", reward: 50 },
-    { name: "Contributed Bounty Token 2", reward: 25 },
-    { name: "Contributed Bounty Token 3", reward: 100 },
-    { name: "Contributed Bounty Token 4", reward: 100000 },
-    { name: "Contributed Bounty Token 6", reward: 50 },
-    { name: "Contributed Bounty Token 9", reward: 25 },
-    { name: "Contributed Bounty Token 11", reward: 100 },
-    { name: "Contributed Bounty Token 32", reward: 100000 },
-  ];
 
   useEffect(() => {
     const getWalletBalance = async () => {
       const api = new ApiMiddleware(wallet);
-      const { tokenName, gitHub, contributions } = await api.getIdInfo();
+      const hasId = await api.findIdtoken();
 
-      const balance = await wallet.getLovelace();
-      setUserBalance(balance);
+      if (hasId.hasIdToken) {
+        const { tokenName, gitHub, contributions } = await api.getIdInfo();
 
-      // Simulating fetching user token and contributions
-      setUserToken(tokenName);
-      setUserContributions(3);
-      setUserGithubUrl(gitHub);
+        const balance = await wallet.getLovelace();
+        setUserBalance(balance);
+
+        // Simulating fetching user token and contributions
+        setUserToken(tokenName);
+        setUserContributions(contributions);
+        setUserGithubUrl(gitHub);
+      }
     };
 
     if (connected) {
@@ -65,8 +61,8 @@ const Profile: React.FC = () => {
     }
   }, [connect, connected, wallet]);
 
-  const totalContributions = userBountyTokensContributed.reduce(
-    (total, token) => total + token.reward,
+  const totalContributions = [...userContributions.values()].reduce(
+    (sum, value) => sum + value,
     0
   );
 
@@ -175,15 +171,14 @@ const Profile: React.FC = () => {
                 </h2>
                 <div className="h-96 overflow-y-auto p-4">
                   <ul className="space-y-4">
-                    {userBountyTokensContributed.map((token) => (
+                    {Array.from(userContributions).map(([repo, reward], i) => (
                       <li
-                        key={token.name}
+                        key={i}
                         className="bg-gray-700 transition duration-200 rounded-lg flex justify-between items-center p-4 transform hover:scale-105 hover:shadow-lg"
                       >
-                        <h3 className="text-lg font-semibold">{token.name}</h3>
+                        <h3 className="text-lg font-semibold">{repo}</h3>
                         <h4 className="text-lg font-semibold">
-                          Amount:{" "}
-                          <span className="font-bold">{token.reward}</span>
+                          Amount: <span className="font-bold">{reward}</span>
                         </h4>
                       </li>
                     ))}

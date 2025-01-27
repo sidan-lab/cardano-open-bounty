@@ -25,7 +25,9 @@ import {
 } from "./types";
 import {
   getIdMintingPolicyId,
+  getIdMintingRefScriptTx,
   getIdMintingScriptCbor,
+  getIdMintingScriptHash,
   getIdOracleCounterAddress,
   getIdOracleCounterSpendingScriptCbor,
   getIdSpendingScriptAddress,
@@ -60,7 +62,10 @@ export const mintIdToken = async (
   const changeAddress = await wallet.getChangeAddress();
   const utxos = await wallet.getUtxos();
   const collateral = (await wallet.getCollateral())[0];
-  const usedAddress = (await wallet.getUsedAddresses())[0];
+  const usedAddress =
+    (await wallet.getUsedAddresses()).length === 0
+      ? (await wallet.getUnusedAddresses())[0]
+      : (await wallet.getUsedAddresses())[0];
   const { pubKeyHash } = deserializeAddress(usedAddress);
 
   const idOracleCounterSpendingScriptCbor =
@@ -71,6 +76,10 @@ export const mintIdToken = async (
 
   const idOracleCounterAddress = getIdOracleCounterAddress();
   const idSpendingScriptAddress = getIdSpendingScriptAddress();
+
+  const idMintingScriptHash = getIdMintingScriptHash();
+  const [idMintingScriptTxHash, idMintingScriptOutputIndex] =
+    getIdMintingRefScriptTx();
 
   const api = new ApiMiddleware(wallet);
   try {
@@ -117,7 +126,12 @@ export const mintIdToken = async (
         idMintingPolicyId,
         CIP68_100(stringToHex(idName + count.toString()))
       )
-      .mintingScript(idMintingScriptCbor)
+      .mintTxInReference(
+        idMintingScriptTxHash,
+        idMintingScriptOutputIndex,
+        (idMintingScriptCbor.length / 2).toString(),
+        idMintingScriptHash
+      )
       .mintRedeemerValue(idReemder, "JSON")
       .mintPlutusScriptV3()
       .mint(
@@ -125,7 +139,12 @@ export const mintIdToken = async (
         idMintingPolicyId,
         CIP68_222(stringToHex(idName + count.toString()))
       )
-      .mintingScript(idMintingScriptCbor)
+      .mintTxInReference(
+        idMintingScriptTxHash,
+        idMintingScriptOutputIndex,
+        (idMintingScriptCbor.length / 2).toString(),
+        idMintingScriptHash
+      )
       .mintRedeemerValue(idReemder, "JSON")
       .txOut(idOracleCounterAddress, [
         {

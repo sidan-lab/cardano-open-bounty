@@ -29,16 +29,18 @@ const BountyTable: React.FC = () => {
   useEffect(() => {
     const checkIDTokenOwnership = async () => {
       const api = new ApiMiddleware(wallet);
-      const hasId = await api.findIdtoken();
-      const { tokenName } = await api.getIdToken();
-
       const allBounties: BountyWithName[] = await api.getAllBounty();
-      const ownBounties: BountyWithName[] = allBounties.filter(
-        (bounty) => bounty.name === tokenName
-      );
+      const hasId = await api.findIdtoken();
 
+      if (hasId.hasIdToken) {
+        const { tokenName } = await api.getIdToken();
+        const ownBounties: BountyWithName[] = allBounties.filter(
+          (bounty) => bounty.name === tokenName
+        );
+
+        setUserBounties(ownBounties);
+      }
       setBounties(allBounties);
-      setUserBounties(ownBounties);
       setHasIDToken(hasId.hasIdToken);
     };
     if (connected) {
@@ -232,7 +234,7 @@ const BountyTable: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-white">{`${bounty.reward} ADA`}</td>
                   <td className="px-8 py-4 flex justify-center space-x-4">
-                    <Contribute bounty={bounty} />
+                    <Contribute bounty={bounty} wallet={wallet} />
                   </td>
                 </tr>
               ))

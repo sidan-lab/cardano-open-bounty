@@ -1,7 +1,10 @@
 import { IWallet } from "@meshsdk/core";
-import { deleteMultiSigApiRoute } from "../pages/common/api_common";
+import {
+  // deleteMultiSigApiRoute,
+  deleteUnsignedBountyApiRoute,
+} from "../pages/common/api_common";
 
-export const signBountyToken = async (txHash: string, wallet: IWallet) => {
+export const signBountyToken = async (unsignedTx: string, wallet: IWallet) => {
   if (!wallet) {
     alert("Please connect your wallet");
     return;
@@ -32,10 +35,11 @@ export const signBountyToken = async (txHash: string, wallet: IWallet) => {
     //     await wallet.submitTx(signedTx);
     //     await deleteMultiSigApiRoute(bounty_name);
     //   }
-    const signedTx = await wallet.signTx(txHash, true);
+    const signedTx = await wallet.signTx(unsignedTx, true);
     await wallet.submitTx(signedTx);
 
-    await deleteMultiSigApiRoute(txHash);
+    await deleteUnsignedBountyApiRoute(unsignedTx);
+    console.log(signedTx);
   } catch (e) {
     console.error(e);
   }

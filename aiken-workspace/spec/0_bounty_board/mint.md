@@ -23,6 +23,7 @@ Oracle NFT
    - check id token
    - check signatories
    - check contributer datum is update correct
+   - intent token is burnt
 
    -> burn
 
