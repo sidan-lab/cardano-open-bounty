@@ -12,13 +12,11 @@ AssetName: oracle_nft
 
 ```rs
 pub type ContributerDatum {
-   github: String,
-   contributions: List<Contribution>
-}
-
-pub type Contribution {
-   signers: List<PubKeyHash>,
-   amount: Int
+  metadata: Pairs<Data, Data>,
+  // GitHub: ByteArray
+  version: Int,
+  contributions: Pairs<ByteArray, Int>,
+  pub_key_hash: ByteArray,
 }
 ```
 
