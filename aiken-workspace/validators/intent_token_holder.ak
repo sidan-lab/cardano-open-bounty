@@ -1,3 +1,4 @@
+use aiken/collection/list
 use aiken/primitive/bytearray.{concat}
 use cardano/address.{from_script}
 use cardano/assets.{AssetName, PolicyId, from_asset}
@@ -7,6 +8,7 @@ use cocktail.{
   convert_int_to_bytes, inputs_with, inputs_with_policy, value_policy_info,
   value_tokens,
 }
+use cocktail/vodka_inputs.{inputs_at}
 use identity_token_type.{ContributerDatum}
 use mocktail.{
   complete, mint, mock_policy_id, mock_pub_key_address, mock_pub_key_hash,
@@ -24,16 +26,18 @@ validator intent_ref_token_holder(oracle_nft: (PolicyId, AssetName)) {
       reference_inputs |> get_oracle_nft_datum(oracle_nft)
 
     expect Some(own_input) = find_input(inputs, input)
+    let script_inputs =
+      inputs_at(inputs, own_input.output.address) |> list.length()
+
+    let is_only_one_script_input = script_inputs == 1
     expect [(intent_policy_id, _, _)] = value_tokens(own_input.output.value)
 
     expect [(only_burn_policy, _, only_burn_quantity)] = value_tokens(mint)
     let is_intent_completed =
       only_burn_policy == intent_policy_id && only_burn_quantity == -1
 
-    is_intent_completed?
+    is_intent_completed? && is_only_one_script_input?
   }
-
-  //todo: 
 
   else(_) {
     fail
